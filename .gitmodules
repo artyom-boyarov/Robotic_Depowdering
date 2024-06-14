@@ -1,3 +1,0 @@
-[submodule "src/flexiv_ros2"]
-	path = src/flexiv_ros2
-	url = https://github.com/flexivrobotics/flexiv_ros2.git

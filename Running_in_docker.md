@@ -9,3 +9,6 @@ Then, visit <a>https://docs.docker.com/compose/install/linux/#install-using-the-
 For example, if you want to get a container with ROS2 and gazebo available, run:<br>
 ```docker compose up -d dev``` <br>
 ```docker compose exec -it dev bash```
+
+# TODO
+Fix build directory sync

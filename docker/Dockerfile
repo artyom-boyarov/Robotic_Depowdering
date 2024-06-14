@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 RUN apt-get update
-RUN apt-get install -y gz-harmonic
+RUN apt-get install -y gz-fortress
 RUN apt-get install -y ros-humble-ros-gz
 # Can then run 
 # $ gz sim /opt/ros/humble/share/ros_gz_sim_demos/models/double_pendulum_model.sdf 
@@ -34,6 +34,8 @@ ENV NO_AT_BRIDGE 1
 
 RUN mkdir /dev_ws
 WORKDIR /dev_ws
+
+
 
 #####################
 # Development Image #
@@ -63,3 +65,15 @@ RUN chown -R ${UID}:${GID} /dev_ws/
 
 # Set the user
 USER ${USERNAME}
+
+
+# Create environment
+RUN source /opt/ros/humble/setup.sh
+WORKDIR /dev_ws/
+RUN rosdep update
+RUN sudo apt-get update && rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+
+RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+RUN ~/.fzf/install --all
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
