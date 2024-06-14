@@ -68,10 +68,9 @@ USER ${USERNAME}
 
 
 # Create environment
-RUN source /opt/ros/humble/setup.sh
-WORKDIR /dev_ws/
+RUN source /opt/ros/humble/setup.bash
+WORKDIR /dev_ws
 RUN rosdep update
-RUN sudo apt-get update && rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
 
 RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 RUN ~/.fzf/install --all
