@@ -1,0 +1,10 @@
+{
+  "package_name": "flexiv_msgs",
+  "non_idl_tuples": [
+    "/home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_msgs:msg/Digital.msg",
+    "/home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_msgs:msg/GPIOStates.msg",
+    "/home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_msgs:msg/JointPosVel.msg",
+    "/home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_msgs:msg/Mode.msg",
+    "/home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_msgs:msg/RobotStates.msg"
+  ]
+}

@@ -1,0 +1,53 @@
+running develop
+/home/casey/.local/lib/python3.10/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` and ``easy_install``.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        See https://github.com/pypa/setuptools/issues/917 for details.
+        ********************************************************************************
+
+!!
+  easy_install.initialize_options(self)
+Removing /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv-test-nodes.egg-link (link to .)
+running egg_info
+writing ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/PKG-INFO
+writing dependency_links to ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/dependency_links.txt
+writing entry points to ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/entry_points.txt
+writing requirements to ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/requires.txt
+writing top-level names to ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/top_level.txt
+reading manifest file '../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/SOURCES.txt'
+writing manifest file '../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build
+creating /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib
+creating /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes
+copying flexiv_test_nodes/__init__.py -> /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes
+copying flexiv_test_nodes/publisher_joint_trajectory_controller.py -> /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes
+copying flexiv_test_nodes/sine_sweep_impedance_controller.py -> /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes
+copying flexiv_test_nodes/sine_sweep_position_controller.py -> /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes
+running install
+running install_lib
+creating /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes
+copying /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes/__init__.py -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes
+copying /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes/publisher_joint_trajectory_controller.py -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes
+copying /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes/sine_sweep_impedance_controller.py -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes
+copying /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build/lib/flexiv_test_nodes/sine_sweep_position_controller.py -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes
+byte-compiling /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes/publisher_joint_trajectory_controller.py to publisher_joint_trajectory_controller.cpython-310.pyc
+byte-compiling /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes/sine_sweep_impedance_controller.py to sine_sweep_impedance_controller.cpython-310.pyc
+byte-compiling /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes/sine_sweep_position_controller.py to sine_sweep_position_controller.cpython-310.pyc
+running install_data
+copying resource/flexiv_test_nodes -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/share/ament_index/resource_index/packages
+copying package.xml -> /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/share/flexiv_test_nodes
+running install_egg_info
+Copying ../../../build/flexiv_test_nodes/flexiv_test_nodes.egg-info to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv_test_nodes-0.0.1-py3.10.egg-info
+running install_scripts
+Installing publisher_joint_trajectory_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+Installing sine_sweep_impedance_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+Installing sine_sweep_position_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+writing list of installed files to '/home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/install.log'

@@ -1,0 +1,15 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from flexiv_msgs/msg/JointPosVel.msg
+// generated code does not contain a copyright notice
+
+
+module flexiv_msgs {
+  module msg {
+    typedef double double__7[7];
+    struct JointPosVel {
+      double__7 positions;
+
+      double__7 velocities;
+    };
+  };
+};

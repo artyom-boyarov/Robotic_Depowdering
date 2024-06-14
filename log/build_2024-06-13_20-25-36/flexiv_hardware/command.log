@@ -1,0 +1,6 @@
+Invoking command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_hardware -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/casey/flexiv_ros2_ws/install/flexiv_hardware
+Invoked command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/casey/flexiv_ros2_ws/src/flexiv_ros2/flexiv_hardware -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/casey/flexiv_ros2_ws/install/flexiv_hardware
+Invoking command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/casey/flexiv_ros2_ws/build/flexiv_hardware -- -j16 -l16
+Invoked command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /home/casey/flexiv_ros2_ws/build/flexiv_hardware -- -j16 -l16
+Invoking command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/casey/flexiv_ros2_ws/build/flexiv_hardware
+Invoked command in '/home/casey/flexiv_ros2_ws/build/flexiv_hardware' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /home/casey/flexiv_ros2_ws/build/flexiv_hardware

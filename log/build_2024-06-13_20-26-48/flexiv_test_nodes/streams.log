@@ -1,0 +1,21 @@
+[0.530s] Invoking command in '/home/casey/flexiv_ros2_ws/build/flexiv_test_nodes': PYTHONPATH=/home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/prefix_override:/home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build --no-deps symlink_data
+[0.687s] running develop
+[0.688s] /usr/lib/python3/dist-packages/setuptools/command/easy_install.py:158: EasyInstallDeprecationWarning: easy_install command is deprecated. Use build and pip and other standards-based tools.
+[0.688s]   warnings.warn(
+[0.776s] running egg_info
+[0.776s] writing flexiv_test_nodes.egg-info/PKG-INFO
+[0.776s] writing dependency_links to flexiv_test_nodes.egg-info/dependency_links.txt
+[0.776s] writing entry points to flexiv_test_nodes.egg-info/entry_points.txt
+[0.777s] writing requirements to flexiv_test_nodes.egg-info/requires.txt
+[0.777s] writing top-level names to flexiv_test_nodes.egg-info/top_level.txt
+[0.778s] reading manifest file 'flexiv_test_nodes.egg-info/SOURCES.txt'
+[0.779s] writing manifest file 'flexiv_test_nodes.egg-info/SOURCES.txt'
+[0.780s] running build_ext
+[0.780s] Creating /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages/flexiv-test-nodes.egg-link (link to .)
+[0.781s] Installing publisher_joint_trajectory_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+[0.781s] Installing sine_sweep_impedance_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+[0.781s] Installing sine_sweep_position_controller script to /home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/flexiv_test_nodes
+[0.781s] 
+[0.781s] Installed /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes
+[0.781s] running symlink_data
+[0.839s] Invoked command in '/home/casey/flexiv_ros2_ws/build/flexiv_test_nodes' returned '0': PYTHONPATH=/home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/prefix_override:/home/casey/flexiv_ros2_ws/install/flexiv_test_nodes/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/casey/flexiv_ros2_ws/build/flexiv_test_nodes/build --no-deps symlink_data
