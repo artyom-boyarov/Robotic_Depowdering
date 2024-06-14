@@ -1,1 +1,0 @@
-/home/casey/flexiv_ros2_ws/build/flexiv_msgs/rosidl_generator_cpp/flexiv_msgs/msg/detail/mode__struct.hpp

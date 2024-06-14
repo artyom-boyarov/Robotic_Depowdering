@@ -1,6 +1,0 @@
-setup.py
-flexiv_gazebo/__init__.py
-flexiv_gazebo.egg-info/PKG-INFO
-flexiv_gazebo.egg-info/SOURCES.txt
-flexiv_gazebo.egg-info/dependency_links.txt
-flexiv_gazebo.egg-info/top_level.txt
