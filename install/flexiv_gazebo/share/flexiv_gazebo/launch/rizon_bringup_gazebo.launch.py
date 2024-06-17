@@ -169,9 +169,6 @@ def generate_launch_description():
     name='rviz2',
     output='screen',
     arguments=['-d', rviz_config_file])  
-  print(gz_args)
-  print(gz_version)
-  print(ign_args)  
   # Spawn the robot
   start_gazebo_ros_spawner_cmd = Node(
     package='ros_gz_sim',
