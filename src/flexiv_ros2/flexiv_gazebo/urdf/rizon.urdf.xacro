@@ -14,8 +14,8 @@
   <xacro:arg name="prefix" default="" />
   <xacro:arg name="robot_ip" default="" />
   <xacro:arg name="local_ip" default="" />
-  <xacro:arg name="use_fake_hardware" default="false" />
-  <xacro:arg name="fake_sensor_commands" default="false" />
+  <xacro:arg name="use_fake_hardware" default="true" />
+  <xacro:arg name="fake_sensor_commands" default="true" />
   <xacro:arg name="initial_positions_file" default="$(find flexiv_description)/config/initial_positions.yaml"/>
 
   <!-- convert to property to use substitution in function -->
