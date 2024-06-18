@@ -8,10 +8,10 @@ FROM osrf/ros:${ROS_DISTRO}-desktop as base
 ENV ROS_DISTRO=${ROS_DISTRO}
 SHELL ["/bin/bash", "-c"]
 
-# Install basic apt packages
+# Install basic apt packages and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
  git libcanberra-gtk-module libcanberra-gtk3-module fuse3 libfuse2 libqt5svg5-dev \
- python3-pip wget curl lsb-release gnupg
+ python3-pip wget curl lsb-release gnupg pcl-tools
 
 # Install additional Python modules
 # RUN pip3 install matplotlib transforms3d
@@ -75,4 +75,6 @@ RUN rosdep update
 RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 RUN ~/.fzf/install --all
 
-RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+# To run ros2 commands and compiled nodes
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc 
+RUN echo "source /dev_ws/install/local_setup.bash" >> ~/.bashrc
