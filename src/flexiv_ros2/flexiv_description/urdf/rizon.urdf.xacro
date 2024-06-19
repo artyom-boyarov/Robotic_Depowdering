@@ -30,5 +30,13 @@
     fake_sensor_commands="$(arg fake_sensor_commands)" 
     initial_positions="${xacro.load_yaml(initial_positions_file)}">
   </xacro:rizon_robot>
-
+  <!-- JointStatePublisher publishes joint state information for the model.
+         In future versions of Gazebo, replace 'ignition-gazebo' with 'gz-sim' and
+         'ignition::gazebo' with 'gz::sim'
+    -->
+    <gazebo>
+        <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+            <topic>joint_states</topic>
+        </plugin>    
+    </gazebo>  
 </robot>

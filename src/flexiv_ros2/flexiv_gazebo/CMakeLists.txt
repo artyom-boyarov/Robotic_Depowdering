@@ -11,22 +11,17 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 find_package(ament_cmake REQUIRED)
-find_package(controller_manager REQUIRED)
 find_package(gazebo_ros REQUIRED)
-find_package(rclcpp REQUIRED)
 find_package(ros_gz REQUIRED)
 find_package(ros_gz_bridge REQUIRED)
 find_package(ros_gz_sim REQUIRED)
 find_package(ros_gz_image REQUIRED)
-find_package(trajectory_msgs REQUIRED)
 find_package(xacro REQUIRED)
 
 # Define a CMake variable named dependencies that lists all
 # ROS 2 packages and other dependencies the project requires.
 set(dependencies
-  rclcpp
   std_msgs
-  trajectory_msgs
 )
 
 # Add the specified directories to the list of paths that the compiler
@@ -42,14 +37,11 @@ include_directories(include)
 
 # Copy necessary files to designated locations in the project
 install (
-  DIRECTORY config launch models scripts src urdf worlds
+  DIRECTORY config launch models src worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(
-  DIRECTORY include/
-  DESTINATION include
-)
+
 
 # Install cpp executables
 #install(
@@ -61,13 +53,7 @@ install(
 # Install Python modules for import
 ament_python_install_package(${PROJECT_NAME})
 
-# Install Python executables
-install(PROGRAMS
-  scripts/publisher_joint_trajectory_controller.py
-  scripts/sine_sweep_impedance_controller.py
-  scripts/sine_sweep_position_controller.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
