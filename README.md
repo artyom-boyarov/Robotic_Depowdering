@@ -14,3 +14,5 @@
 ```ros2 run robotic_depowdering gpd_service```
 ### Pick up object
 ```ros2 run robotic_depowdering pick_up_object src/robotic_depowdering/test_parts/HollowCube.obj```
+### Test parts
+All test parts are in `src/robotic_depowdering/test_parts`. They are of obj format, and the parts are centered at (0,0,0). Any new parts need to be of obj format. The dimensions of the part are in metres.
