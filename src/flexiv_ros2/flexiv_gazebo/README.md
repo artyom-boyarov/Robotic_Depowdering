@@ -65,7 +65,7 @@ Flexiv Rizon 4S simulation in Gazebo (Gazebo classic) with ros-gz.
 
 -To start the robot in Gazebo:
 ```
-ros2 launch flexiv_gazebo rizon_bringup_gazebo.launch.py
+ros2 launch flexiv_gazebo rizon_bringup_gazebo.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
 ```
 -Everytime anything is changed, make sure to run:
 ```
