@@ -18,6 +18,8 @@ find_package(tf2 REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(trajectory_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
 
 
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -47,7 +49,7 @@ ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 
 target_link_libraries(gpd_service ${PCL_LIBRARIES} gpd)
 
 add_executable(pick_up_object src/pick_up_object.cpp)
-ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces)
+ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces)
 
 install( TARGETS
   server

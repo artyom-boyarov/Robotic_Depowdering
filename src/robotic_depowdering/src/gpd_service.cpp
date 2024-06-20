@@ -4,6 +4,11 @@
 #include "gpd/grasp_detector.h"
 #include "gpd/util/config_file.h"
 #include "tf2_eigen/tf2_eigen.hpp"
+#include "pcl/PolygonMesh.h"
+#include "pcl/io/io.h"
+#include "pcl/io/vtk_lib_io.h"
+#include "pcl/io/obj_io.h"
+
 
 #include <memory>
 #include <cstdlib>
@@ -21,11 +26,25 @@ void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv
     // Convert OBJ to PCD
     // $ pcl_mesh_sampling GPDtest.obj GPDtestMeshSampling.pcd -leaf_size 0.0001
     
-    std::string filename_pcd{request->file_name};
+    auto filename = request->file_name;
+    std::string filename_pcd{filename};
     filename_pcd.replace(filename_pcd.size() - 4, 4, ".pcd");
+
+    // Convert to STL if needed.
+    std::string fileExtension(filename.end() - 4, filename.end());
+    if (fileExtension == ".stl") {
+        // Convert to stl
+        pcl::PolygonMesh stlMesh;
+        pcl::io::loadPolygonFileSTL(filename, stlMesh);
+        std::string filename_obj{filename};
+        filename_obj.replace(filename_obj.size() - 4, 4, ".obj");
+        pcl::io::saveOBJFile(filename_obj, stlMesh);
+        filename = filename_obj;
+    }
+
     std::ostringstream command;
     command << "pcl_mesh_sampling ";
-    command << request->file_name;
+    command << filename;
     command << " ";
     command << filename_pcd;
     command << " -leaf_size 0.001 -no_vis_result"; // TODO: Add option for modifying more parameters?

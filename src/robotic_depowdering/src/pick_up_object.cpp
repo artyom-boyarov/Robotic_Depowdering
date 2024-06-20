@@ -1,9 +1,14 @@
 #include "rclcpp/rclcpp.hpp"
 #include "robotic_depowdering_interfaces/srv/gpd_grasp.hpp"
+#include "builtin_interfaces/msg/duration.hpp"
+#include "trajectory_msgs/msg/joint_trajectory.hpp"
+#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
+
 
 #include <chrono>
 #include <cstdlib>
 #include <memory>
+#include <ctime>
 
 using namespace std::chrono_literals;
 
@@ -60,6 +65,42 @@ int main(int argc, char** argv) {
 
     // Carry out IK 
     //   \/\/\/\/
+    std::vector<double> positions(7);
+    srand((unsigned int)time(NULL));
+    for (auto& pos : positions) {
+        pos = (float)rand() / RAND_MAX;
+    }
+    
+
+    // Now, after we've done IK, we publish the list of joint angles for the 7 joints to "/rizon_arm_controller/joint_trajectory".
+    const std::string rizon_interface_topic = "/rizon_arm_controller/joint_trajectory";
+    rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr jointTrajectoryPublisher = 
+        node->create_publisher<trajectory_msgs::msg::JointTrajectory>(rizon_interface_topic, 10);
+    
+    trajectory_msgs::msg::JointTrajectory jointTrajectoryMessage;
+    jointTrajectoryMessage.joint_names = std::vector<std::string>({
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"});
+    
+    trajectory_msgs::msg::JointTrajectoryPoint armPoint;
+    armPoint.positions = positions;
+    auto duration = builtin_interfaces::msg::Duration();
+    duration.sec = 1;
+    armPoint.time_from_start = duration;
+
+    jointTrajectoryMessage.points = {armPoint};
+
+    try {
+        jointTrajectoryPublisher->publish(jointTrajectoryMessage);
+        rclcpp::spin_some(node);
+    } catch (const rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
+    }
 
     rclcpp::shutdown();
     return 0;

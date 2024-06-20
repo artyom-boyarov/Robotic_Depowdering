@@ -13,6 +13,8 @@
   <depend>example_interfaces</depend>
   <depend>robotic_depowdering_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>builtin_interfaces</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_eigen</depend>
