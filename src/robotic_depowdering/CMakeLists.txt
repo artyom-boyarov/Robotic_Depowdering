@@ -45,7 +45,7 @@ add_executable(client src/add_two_ints_client.cpp)
 ament_target_dependencies(client rclcpp example_interfaces)
 
 add_executable(gpd_service src/gpd_service.cpp)
-ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 tf2_ros tf2_eigen Eigen3)
+ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 tf2_ros tf2_eigen Eigen3 gpd)
 target_link_libraries(gpd_service ${PCL_LIBRARIES} gpd)
 
 add_executable(pick_up_object src/pick_up_object.cpp)
