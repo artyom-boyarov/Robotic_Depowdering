@@ -62,7 +62,10 @@ Flexiv Rizon 4S simulation in Gazebo (Gazebo classic) with ros-gz.
 > ```
 
 ### Executing program
-
+-Export the environmental variable to the correct path
+```
+export GZ_SIM_RESOURCE_PATH=~/flexiv_ws/install/flexiv_description/share
+```
 -To start the robot in Gazebo:
 ```
 ros2 launch flexiv_gazebo rizon_bringup_gazebo.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
@@ -72,3 +75,6 @@ ros2 launch flexiv_gazebo rizon_bringup_gazebo.launch.py robot_ip:=dont-care loc
 colcon build
 ```
 under root directory.
+
+### Troubleshooting
+-If gazebo hangs at "Requesting list of world names. The server may be busy downloading resources. Please be patient.", enable multicast by following the instructions [here](https://docs.ros.org/en/humble/How-To-Guides/Installation-Troubleshooting.html)
