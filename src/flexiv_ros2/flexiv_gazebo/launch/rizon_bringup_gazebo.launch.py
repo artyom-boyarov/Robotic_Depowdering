@@ -48,6 +48,7 @@ def generate_launch_description():
         "worlds/empty.world"  # e.g. 'world/empty.world', 'world/house.world'
     )
     gazebo_launch_file_path = "launch"
+  
     ros_gz_bridge_config_file_path = "config/ros_gz_bridge.yaml"
 
     # Set the path to different files and folders.
@@ -56,7 +57,6 @@ def generate_launch_description():
         package_name_gazebo
     )
     pkg_share_description = FindPackageShare(package=package_name_description).find(package_name_description)
-    print(f"Setting GZ_SIM_RESOURCE_PATH to: {pkg_share_description}")
     default_ros_gz_bridge_config_file_path = os.path.join(
         pkg_share_gazebo, ros_gz_bridge_config_file_path
     )
@@ -72,7 +72,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             rizon_type_param_name,
             description="Type of the Flexiv Rizon robot.",
-            default_value="rizon4",
+            default_value="rizon4s",
             choices=["rizon4", "rizon4s", "rizon10"],
         )
     )
@@ -270,11 +270,11 @@ def generate_launch_description():
     robot_description = {"robot_description": robot_description_content}
 
     # Specify the actions
-
+    '''
     set_env_vars_resources = AppendEnvironmentVariable(
-        "GZ_SIM_RESOURCE_PATH", pkg_share_description
+        "GZ_SIM_RESOURCE_PATH", gazebo_models_path
     )
-
+    '''
     # Start Gazebo server
     start_gazebo_server_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -301,7 +301,7 @@ def generate_launch_description():
     package='robot_state_publisher',
     executable='robot_state_publisher',
     name='robot_state_publisher',
-    output='screen',
+    output='both',
     parameters=[{
       'use_sim_time': use_sim_time, 
       'robot_description': robot_description_content}])
@@ -317,6 +317,8 @@ def generate_launch_description():
         output="log",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(start_rviz),
+        parameters=[{
+      'use_sim_time': use_sim_time}]
     )
     # Spawn the robot
     start_gazebo_ros_spawner_cmd = Node(
@@ -340,7 +342,7 @@ def generate_launch_description():
             "-Y",
             yaw,
         ],
-        output="screen",
+        output="both",
     )
 
     # Bridge ROS topics and Gazebo messages for establishing communication
@@ -366,7 +368,8 @@ def generate_launch_description():
         parameters=[robot_description, robot_controllers],
         output="both",
     )
-
+    '''
+    
     # Robot state publisher
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
@@ -375,7 +378,7 @@ def generate_launch_description():
         output="both",
         parameters=[robot_description],
     )
-
+    '''
     # Run robot controller
     robot_controller_spawner = Node(
         package="controller_manager",
@@ -446,7 +449,7 @@ def generate_launch_description():
         arguments=["gpio_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Delay rviz start after `joint_state_broadcaster`
+    # Delay rviz start after joint_state_broadcaster
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
@@ -454,7 +457,7 @@ def generate_launch_description():
         )
     )
 
-    # Delay start of robot_controller after `joint_state_broadcaster`
+    # Delay start of robot_controller after joint_state_broadcaster
     delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = (
         RegisterEventHandler(
             event_handler=OnProcessExit(
@@ -466,7 +469,7 @@ def generate_launch_description():
 
     nodes = [
         ros2_control_node,
-        robot_state_publisher_node,
+        #robot_state_publisher_node,
         joint_state_broadcaster_spawner,
         force_torque_sensor_broadcaster_spawner,
         external_wrench_in_base_broadcaster_spawner,
@@ -477,7 +480,7 @@ def generate_launch_description():
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
         
         #Gazebo
-        set_env_vars_resources,
+        #set_env_vars_resources,
         start_gazebo_server_cmd,
         start_gazebo_client_cmd,
         start_gazebo_ros_spawner_cmd,

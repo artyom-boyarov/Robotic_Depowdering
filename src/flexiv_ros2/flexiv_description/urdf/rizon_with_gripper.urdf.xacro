@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Define arguments -->
+  <xacro:arg name="name" default="rizon_with_gripper"/>
+  <xacro:arg name="rizon_type" default="rizon4"/>
+  <xacro:arg name="prefix" default=""/>
+  <xacro:arg name="robot_ip" default=""/>
+  <xacro:arg name="local_ip" default=""/>
+  <xacro:arg name="use_fake_hardware" default="false"/>
+  <xacro:arg name="fake_sensor_commands" default="false"/>
+  <xacro:arg name="initial_positions_file" default="$(find flexiv_description)/config/initial_positions.yaml"/>
+
+  <!-- Import main robot macro -->
+  <xacro:include filename="$(find flexiv_description)/urdf/rizon_macro.xacro"/>
+  
+  <!-- Define the Rizon robot -->
+  <xacro:rizon_robot 
+    rizon_type="$(arg rizon_type)" 
+    prefix="$(arg prefix)" 
+    robot_ip="$(arg robot_ip)" 
+    local_ip="$(arg local_ip)" 
+    use_fake_hardware="$(arg use_fake_hardware)" 
+    fake_sensor_commands="$(arg fake_sensor_commands)" 
+    initial_positions="${xacro.load_yaml(initial_positions_file)}">
+
+  <!-- Import gripper -->
+  <xacro:include filename="$(find flexiv_description)/urdf/grav.urdf"/>
+
+  <!-- Attach gripper to the flange link of the Rizon 4 robot using a unique prefix for the gripper -->
+  <xacro:gripper prefix="gripper_"/>
+
+  <joint name="gripper_base_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="${prefix}flange"/>
+    <child link="gripper_base_link"/>
+  </joint>
+
+</robot>
