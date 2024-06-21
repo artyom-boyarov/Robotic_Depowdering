@@ -45,8 +45,11 @@ add_executable(client src/add_two_ints_client.cpp)
 ament_target_dependencies(client rclcpp example_interfaces)
 
 add_executable(gpd_service src/gpd_service.cpp)
-ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 tf2_ros tf2_eigen Eigen3 gpd)
+ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 tf2_ros tf2_eigen Eigen3)
 target_link_libraries(gpd_service ${PCL_LIBRARIES} gpd)
+target_link_directories(gpd_service PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
+target_include_directories(gpd_service PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)
+
 
 add_executable(pick_up_object src/pick_up_object.cpp)
 ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces)
