@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(gpd)
-set(CMAKE_BUILD_TYPE Debug) # Maybe change to release.
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(ament_cmake REQUIRED)
 # Eigen library
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -299,9 +298,6 @@ set_target_properties(${PROJECT_NAME}_grasp_detector
 
 
 # Set the location for library installation
-install(TARGETS ${PROJECT_NAME}_grasp_detector DESTINATION lib/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}_grasp_detector DESTINATION lib)
 
-install(DIRECTORY include/gpd DESTINATION include/${PROJECT_NAME})
-
-
-ament_package()
+install(DIRECTORY include/gpd DESTINATION include)

@@ -8,6 +8,9 @@
 
 ## Setup
 ```colcon build --symlink-install```
+## Additional dependencies
+Also install ```pcl-tools``` : <br>
+```sudo apt install pcl-tools```
 
 ## Running
 ### Grasp Pose Detection Service
