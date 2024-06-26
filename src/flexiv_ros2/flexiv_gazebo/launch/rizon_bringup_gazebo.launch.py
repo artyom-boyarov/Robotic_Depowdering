@@ -20,6 +20,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
+
 def generate_launch_description():
     rizon_type_param_name = "rizon_type"
     robot_ip_param_name = "robot_ip"
@@ -28,27 +29,28 @@ def generate_launch_description():
     use_fake_hardware_param_name = "use_fake_hardware"
     fake_sensor_commands_param_name = "fake_sensor_commands"
     robot_controller_param_name = "robot_controller"
+    rizon_prefix_param_name = "rizon_prefix"
+    gripper_prefix_param_name = "gripper_prefix"
     package_name_gazebo = "flexiv_gazebo"
-    package_name_description = 'flexiv_description'
+    package_name_description = "flexiv_description"
     declare_simulator_cmd = "headless"
     declare_use_sim_time_cmd = "use_sim_time"
     declare_use_simulator_cmd = "use_simulator"
     declare_world_cmd = "world"
-    declare_x_cmd = 'x'
-    declare_y_cmd = 'y'
-    declare_z_cmd = 'z'
+    declare_x_cmd = "x"
+    declare_y_cmd = "y"
+    declare_z_cmd = "z"
     declare_roll_cmd = "roll"
     declare_pitch_cmd = "pitch"
     declare_yaw_cmd = "yaw"
     declare_use_robot_state_pub_cmd = "use_robot_state_pub"
-    
 
     # Constants for paths to different files and folders
     world_file_path = (
         "worlds/empty.world"  # e.g. 'world/empty.world', 'world/house.world'
     )
     gazebo_launch_file_path = "launch"
-  
+
     ros_gz_bridge_config_file_path = "config/ros_gz_bridge.yaml"
 
     # Set the path to different files and folders.
@@ -56,7 +58,9 @@ def generate_launch_description():
     pkg_share_gazebo = FindPackageShare(package=package_name_gazebo).find(
         package_name_gazebo
     )
-    pkg_share_description = FindPackageShare(package=package_name_description).find(package_name_description)
+    pkg_share_description = FindPackageShare(package=package_name_description).find(
+        package_name_description
+    )
     default_ros_gz_bridge_config_file_path = os.path.join(
         pkg_share_gazebo, ros_gz_bridge_config_file_path
     )
@@ -134,7 +138,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             declare_use_sim_time_cmd,
-            default_value="true",
+            default_value="false",
             description="Use simulation (Gazebo) clock if true",
         )
     )
@@ -154,12 +158,12 @@ def generate_launch_description():
             description="Full path to the world model file to load",
         )
     )
-    
+
     declared_arguments.append(
         DeclareLaunchArgument(
             declare_use_robot_state_pub_cmd,
-            default_value='True',
-            description='Whether to start the robot state publisher',
+            default_value="True",
+            description="Whether to start the robot state publisher",
         )
     )
 
@@ -210,6 +214,20 @@ def generate_launch_description():
             description="yaw component of initial position, meters",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            rizon_prefix_param_name,
+            default_value="",
+            description="Prefix for the Rizon robot."
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            gripper_prefix_param_name,
+            default_value="gripper_",
+            description="Prefix for the gripper.",
+        )
+    )
     # Initialize Arguments
     rizon_type = LaunchConfiguration(rizon_type_param_name)
     robot_ip = LaunchConfiguration(robot_ip_param_name)
@@ -221,8 +239,11 @@ def generate_launch_description():
     headless = LaunchConfiguration("headless")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_simulator = LaunchConfiguration("use_simulator")
-    use_robot_state_pub = LaunchConfiguration('use_robot_state_pub')
+    use_robot_state_pub = LaunchConfiguration("use_robot_state_pub")
     world = LaunchConfiguration("world")
+    rizon_prefix = LaunchConfiguration(rizon_prefix_param_name)
+    gripper_prefix = LaunchConfiguration(gripper_prefix_param_name)
+
 
     # Set the default pose
     x = LaunchConfiguration("x")
@@ -265,16 +286,22 @@ def generate_launch_description():
             " ",
             "fake_sensor_commands:=",
             fake_sensor_commands,
+            " ",
+            "rizon_prefix:=",
+            rizon_prefix,
+            " ",
+            "gripper_prefix:=",
+            gripper_prefix,
         ]
     )
     robot_description = {"robot_description": robot_description_content}
 
     # Specify the actions
-    '''
+    """
     set_env_vars_resources = AppendEnvironmentVariable(
         "GZ_SIM_RESOURCE_PATH", gazebo_models_path
     )
-    '''
+    """
     # Start Gazebo server
     start_gazebo_server_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -297,14 +324,18 @@ def generate_launch_description():
     )
     # Subscribe to the joint states of the robot, and publish the 3D pose of each link.
     start_robot_state_publisher_cmd = Node(
-    condition=IfCondition(use_robot_state_pub),
-    package='robot_state_publisher',
-    executable='robot_state_publisher',
-    name='robot_state_publisher',
-    output='both',
-    parameters=[{
-      'use_sim_time': use_sim_time, 
-      'robot_description': robot_description_content}])
+        condition=IfCondition(use_robot_state_pub),
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="both",
+        parameters=[
+            {
+                "use_sim_time": use_sim_time,
+                "robot_description": robot_description_content,
+            }
+        ],
+    )
     # RViZ
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("flexiv_description"), "rviz", "view_rizon.rviz"]
@@ -317,8 +348,7 @@ def generate_launch_description():
         output="log",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(start_rviz),
-        parameters=[{
-      'use_sim_time': use_sim_time}]
+        parameters=[{"use_sim_time": use_sim_time}],
     )
     # Spawn the robot
     start_gazebo_ros_spawner_cmd = Node(
@@ -368,7 +398,7 @@ def generate_launch_description():
         parameters=[robot_description, robot_controllers],
         output="both",
     )
-    '''
+    """
     
     # Robot state publisher
     robot_state_publisher_node = Node(
@@ -378,7 +408,7 @@ def generate_launch_description():
         output="both",
         parameters=[robot_description],
     )
-    '''
+    """
     # Run robot controller
     robot_controller_spawner = Node(
         package="controller_manager",
@@ -387,7 +417,7 @@ def generate_launch_description():
     )
 
     # Run joint state broadcaster
-    
+
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -469,7 +499,7 @@ def generate_launch_description():
 
     nodes = [
         ros2_control_node,
-        #robot_state_publisher_node,
+        # robot_state_publisher_node,
         joint_state_broadcaster_spawner,
         force_torque_sensor_broadcaster_spawner,
         external_wrench_in_base_broadcaster_spawner,
@@ -478,9 +508,8 @@ def generate_launch_description():
         gpio_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
-        
-        #Gazebo
-        #set_env_vars_resources,
+        # Gazebo
+        # set_env_vars_resources,
         start_gazebo_server_cmd,
         start_gazebo_client_cmd,
         start_gazebo_ros_spawner_cmd,

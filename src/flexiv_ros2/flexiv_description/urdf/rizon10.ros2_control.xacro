@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <xacro:macro name="rizon10_ros2_control" params="
-    prefix
+    rizon_prefix
     robot_ip
     local_ip
     use_fake_hardware:=false
@@ -24,7 +24,7 @@
         </xacro:unless>
       </hardware>
 
-      <joint name="${prefix}joint1">
+      <joint name="${rizon_prefix}joint1">
         <command_interface name="position">
           <param name="min">-2.7925</param>
           <param name="max">2.7925</param>
@@ -41,7 +41,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint2">
+      <joint name="${rizon_prefix}joint2">
         <command_interface name="position">
           <param name="min">-2.6704</param>
           <param name="max">2.6704</param>
@@ -58,7 +58,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint3">
+      <joint name="${rizon_prefix}joint3">
         <command_interface name="position">
           <param name="min">-2.7925</param>
           <param name="max">2.7925</param>
@@ -75,7 +75,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint4">
+      <joint name="${rizon_prefix}joint4">
         <command_interface name="position">
           <param name="min">-2.7053</param>
           <param name="max">2.7053</param>
@@ -92,7 +92,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint5">
+      <joint name="${rizon_prefix}joint5">
         <command_interface name="position">
           <param name="min">-2.9671</param>
           <param name="max">2.9671</param>
@@ -109,7 +109,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint6">
+      <joint name="${rizon_prefix}joint6">
         <command_interface name="position">
           <param name="min">-1.3963</param>
           <param name="max">4.5379</param>
@@ -126,7 +126,7 @@
         <state_interface name="velocity"/>
         <state_interface name="effort"/>
       </joint>
-      <joint name="${prefix}joint7">
+      <joint name="${rizon_prefix}joint7">
         <command_interface name="position">
           <param name="min">-2.9671</param>
           <param name="max">2.9671</param>
@@ -144,7 +144,7 @@
         <state_interface name="effort"/>
       </joint>
 
-      <sensor name="${prefix}force_torque_sensor">
+      <sensor name="${rizon_prefix}force_torque_sensor">
         <state_interface name="force.x"/>
         <state_interface name="force.y"/>
         <state_interface name="force.z"/>
@@ -152,7 +152,7 @@
         <state_interface name="torque.y"/>
         <state_interface name="torque.z"/>
       </sensor>
-      <sensor name="${prefix}external_wrench_in_base">
+      <sensor name="${rizon_prefix}external_wrench_in_base">
         <state_interface name="force.x"/>
         <state_interface name="force.y"/>
         <state_interface name="force.z"/>
@@ -160,7 +160,7 @@
         <state_interface name="torque.y"/>
         <state_interface name="torque.z"/>
       </sensor>
-      <sensor name="${prefix}external_wrench_in_tcp">
+      <sensor name="${rizon_prefix}external_wrench_in_tcp">
         <state_interface name="force.x"/>
         <state_interface name="force.y"/>
         <state_interface name="force.z"/>
@@ -169,7 +169,7 @@
         <state_interface name="torque.z"/>
       </sensor>
 
-      <sensor name="${prefix}tcp_pose">
+      <sensor name="${rizon_prefix}tcp_pose">
         <state_interface name="position.x"/>
         <state_interface name="position.y"/>
         <state_interface name="position.z"/>
