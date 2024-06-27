@@ -374,7 +374,7 @@ def generate_launch_description():
         ],
         output="both",
     )
-
+    
     # Bridge ROS topics and Gazebo messages for establishing communication
     start_gazebo_ros_bridge_cmd = Node(
         package="ros_gz_bridge",
@@ -386,6 +386,7 @@ def generate_launch_description():
         ],
         output="screen",
     )
+
     # Robot controllers
     robot_controllers = PathJoinSubstitution(
         [FindPackageShare("flexiv_bringup"), "config", "rizon_controllers.yaml"]

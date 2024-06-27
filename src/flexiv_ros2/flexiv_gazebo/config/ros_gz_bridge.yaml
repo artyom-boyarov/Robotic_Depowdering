@@ -3,4 +3,4 @@
   gz_topic_name: "joint_states"
   ros_type_name: "sensor_msgs/msg/JointState"
   gz_type_name: "ignition.msgs.Model" # In future, this will be gz.msgs.Model
-  direction: GZ_TO_ROS
+  direction: ROS_TO_GZ
