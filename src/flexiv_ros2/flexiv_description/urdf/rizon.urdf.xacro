@@ -5,7 +5,7 @@
   <xacro:arg name="name" default="rizon"/>
   
   <!-- 'rizon_type' values: rizon4, rizon4s, rizon10 -->
-  <xacro:arg name="rizon_type" default="rizon4"/>
+  <xacro:arg name="rizon_type" default="rizon4s"/>
 
   <!-- import main macro -->
   <xacro:include filename="$(find flexiv_description)/urdf/rizon_macro.xacro"/>

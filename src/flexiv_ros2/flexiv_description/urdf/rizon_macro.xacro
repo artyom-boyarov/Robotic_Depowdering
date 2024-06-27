@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://wiki.ros.org/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <xacro:macro name="rizon_robot" params="
     rizon_type
-    rizon_prefix 
+    rizon_prefix
     robot_ip 
     local_ip 
     use_fake_hardware:=false 
@@ -13,6 +13,7 @@
 
     <!-- Import Rviz colors -->
     <xacro:include filename="$(find flexiv_description)/urdf/flexiv_arm.materials.xacro" />
+
 
     <!-- Rizon 4 or 4s-->
     <xacro:if value="${rizon_type=='rizon4' or rizon_type=='rizon4s'}">

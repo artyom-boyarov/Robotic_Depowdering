@@ -58,9 +58,6 @@ def generate_launch_description():
     pkg_share_gazebo = FindPackageShare(package=package_name_gazebo).find(
         package_name_gazebo
     )
-    pkg_share_description = FindPackageShare(package=package_name_description).find(
-        package_name_description
-    )
     default_ros_gz_bridge_config_file_path = os.path.join(
         pkg_share_gazebo, ros_gz_bridge_config_file_path
     )
@@ -218,7 +215,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             rizon_prefix_param_name,
             default_value="",
-            description="Prefix for the Rizon robot."
+            description="Prefix for the Rizon robot.",
         )
     )
     declared_arguments.append(
@@ -243,8 +240,6 @@ def generate_launch_description():
     world = LaunchConfiguration("world")
     rizon_prefix = LaunchConfiguration(rizon_prefix_param_name)
     gripper_prefix = LaunchConfiguration(gripper_prefix_param_name)
-
-
     # Set the default pose
     x = LaunchConfiguration("x")
     y = LaunchConfiguration("y")
@@ -345,10 +340,9 @@ def generate_launch_description():
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        output="log",
+        output="both",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(start_rviz),
-        parameters=[{"use_sim_time": use_sim_time}],
     )
     # Spawn the robot
     start_gazebo_ros_spawner_cmd = Node(
@@ -357,8 +351,8 @@ def generate_launch_description():
         arguments=[
             "-name",
             rizon_type_param_name,
-            "-topic",
-            "robot_description",
+            "-string",
+            robot_description_content,
             "-x",
             x,
             "-y",
@@ -372,9 +366,9 @@ def generate_launch_description():
             "-Y",
             yaw,
         ],
-        output="both",
+        output="screen",
     )
-    
+    """
     # Bridge ROS topics and Gazebo messages for establishing communication
     start_gazebo_ros_bridge_cmd = Node(
         package="ros_gz_bridge",
@@ -386,7 +380,7 @@ def generate_launch_description():
         ],
         output="screen",
     )
-
+    """
     # Robot controllers
     robot_controllers = PathJoinSubstitution(
         [FindPackageShare("flexiv_bringup"), "config", "rizon_controllers.yaml"]
@@ -397,7 +391,7 @@ def generate_launch_description():
         package="controller_manager",
         executable="ros2_control_node",
         parameters=[robot_description, robot_controllers],
-        output="both",
+        output="screen",
     )
     """
     
@@ -480,6 +474,14 @@ def generate_launch_description():
         arguments=["gpio_controller", "--controller-manager", "/controller_manager"],
     )
 
+    # Launch the joint state broadcaster after spawning the robot
+    delay_joint_state_broadcaster_after_gazebo_spawner_cmd = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=start_gazebo_ros_spawner_cmd,
+            on_exit=[joint_state_broadcaster_spawner],
+        )
+    )
+
     # Delay rviz start after joint_state_broadcaster
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -501,7 +503,8 @@ def generate_launch_description():
     nodes = [
         ros2_control_node,
         # robot_state_publisher_node,
-        joint_state_broadcaster_spawner,
+        # joint_state_broadcaster_spawner,
+        delay_joint_state_broadcaster_after_gazebo_spawner_cmd,
         force_torque_sensor_broadcaster_spawner,
         external_wrench_in_base_broadcaster_spawner,
         external_wrench_in_tcp_broadcaster_spawner,
@@ -514,7 +517,7 @@ def generate_launch_description():
         start_gazebo_server_cmd,
         start_gazebo_client_cmd,
         start_gazebo_ros_spawner_cmd,
-        start_gazebo_ros_bridge_cmd,
+        # start_gazebo_ros_bridge_cmd,
         start_robot_state_publisher_cmd,
     ]
 
