@@ -257,6 +257,10 @@ def generate_launch_description():
         [pkg_flexiv_description, "urdf", "rizon.urdf.xacro"]
     )
 
+    gazebo_models_path = PathJoinSubstitution(
+        [pkg_flexiv_description, ".."]
+    )
+
     # Get URDF via xacro
     robot_description_content = Command(
         [
@@ -292,11 +296,9 @@ def generate_launch_description():
     robot_description = {"robot_description": robot_description_content}
 
     # Specify the actions
-    """
     set_env_vars_resources = AppendEnvironmentVariable(
         "GZ_SIM_RESOURCE_PATH", gazebo_models_path
     )
-    """
     # Start Gazebo server
     start_gazebo_server_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -368,7 +370,7 @@ def generate_launch_description():
         ],
         output="screen",
     )
-    """
+
     # Bridge ROS topics and Gazebo messages for establishing communication
     start_gazebo_ros_bridge_cmd = Node(
         package="ros_gz_bridge",
@@ -380,7 +382,6 @@ def generate_launch_description():
         ],
         output="screen",
     )
-    """
     # Robot controllers
     robot_controllers = PathJoinSubstitution(
         [FindPackageShare("flexiv_bringup"), "config", "rizon_controllers.yaml"]
@@ -501,6 +502,7 @@ def generate_launch_description():
     )
 
     nodes = [
+        # set_env_vars_resources,
         ros2_control_node,
         # robot_state_publisher_node,
         # joint_state_broadcaster_spawner,
@@ -517,7 +519,7 @@ def generate_launch_description():
         start_gazebo_server_cmd,
         start_gazebo_client_cmd,
         start_gazebo_ros_spawner_cmd,
-        # start_gazebo_ros_bridge_cmd,
+        start_gazebo_ros_bridge_cmd,
         start_robot_state_publisher_cmd,
     ]
 

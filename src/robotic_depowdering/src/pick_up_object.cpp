@@ -102,6 +102,8 @@ int main(int argc, char** argv) {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
     }
 
+    
+
     rclcpp::shutdown();
     return 0;
 }
