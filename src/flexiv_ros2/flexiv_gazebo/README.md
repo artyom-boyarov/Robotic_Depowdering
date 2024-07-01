@@ -62,9 +62,9 @@ Flexiv Rizon 4S simulation in Gazebo (Gazebo classic) with ros-gz.
 > ```
 
 ### Executing program
--Export the environmental variable to the correct path
+-Export the environmental variable to the correct path (make sure you are in the base directory of this repo)
 ```
-export GZ_SIM_RESOURCE_PATH=~/flexiv_ws/install/flexiv_description/share
+export GZ_SIM_RESOURCE_PATH=$(pwd)/install/flexiv_description/share
 ```
 -To start the robot in Gazebo:
 ```
