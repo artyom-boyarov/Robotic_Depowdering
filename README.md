@@ -44,4 +44,7 @@ ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckl
 ```
 Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
 ### Test parts
-All test parts are in `src/robotic_depowdering/test_parts`. The obj, stl and binary stl are provided. The parts are centered at (0,0,0) in the CAD files - if you place the part at a different location while testing, you pass this location into ```robotic_depowdering.launch.py``` by adjusting the ``` test_object_x_pos```, ```test_object_y_pos```, and ```test_object_z_pos``` parameters, instead of modifying the CAD file.<br> The dimensions of the part are in metres. If you want to 3D print a part, then CURA will automatically scale the part up to mm. Don't export the part from CURA, as this is unnecessary.
+- All test parts are in `src/robotic_depowdering/test_parts`. The obj, stl and binary stl are provided.
+- The parts are centered at (0,0,0) in the CAD files - if you place the part at a different location while testing, you pass this location into ```robotic_depowdering.launch.py``` by adjusting the ``` test_object_x_pos```, ```test_object_y_pos```, and ```test_object_z_pos``` parameters, instead of modifying the CAD file.
+  - Keep in mind, the Rizon's base plate is 15mm thick. So if you place parts on the ground, and the rizon is on the base plate mounted on the ground, your part's z-coordinate is -0.015.
+- The dimensions of the part are in metres. If you want to 3D print a part, then CURA will automatically scale the part up to mm.
