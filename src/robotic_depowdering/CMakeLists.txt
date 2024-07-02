@@ -70,7 +70,7 @@ install( TARGETS
 
 set(GPD_SRC_DIR ../gpd)
 install(
-  DIRECTORY ${PROJECT_SOURCE_DIR}/cfg ${GPD_SRC_DIR}/models ${GPD_SRC_DIR}/pytorch
+  DIRECTORY ${PROJECT_SOURCE_DIR}/cfg ${GPD_SRC_DIR}/models ${GPD_SRC_DIR}/pytorch ${PROJECT_SOURCE_DIR}/test_parts
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()
