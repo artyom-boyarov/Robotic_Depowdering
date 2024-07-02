@@ -1,7 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler, ExecuteProcess, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit, OnProcessStart
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
     FindExecutable,
@@ -12,7 +13,7 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-
+# TODO: Clean up test object params.
 def generate_launch_description():
     rizon_type_param_name = "rizon_type"
     robot_ip_param_name = "robot_ip"
@@ -278,35 +279,6 @@ def generate_launch_description():
         arguments=["gpio_controller", "--controller-manager", "/controller_manager"],
     )
 
-    # Publish object to /visualization_markers topic
-    #     ros2 topic pub -1 /visualization_markers visualization_msgs/msg/Marker 
-    # "{header: {frame_id: \"base_link\"}, type: 10, action: 0, pose: {position: {x: 0.25, y: 0.25, z: 0}}, scale: {x: 0.001, y: 0.001, z: 0
-    # .001}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"package://robotic_depowdering/test_parts/Buckle.bin.stl\"}"
-    # object_marker_msg = TextSubstitution([
-        
-    # ])
-    
-    publish_object_cmd = ExecuteProcess(
-        cmd=[[
-            "ros2 topic pub ",
-            "--once ",
-            "/visualization_markers ",
-            "visualization_msgs/msg/Marker ",
-            "\"{header: {frame_id: \"base_link\"}, type: 10, action: 0, pose: {position: {x: ",
-            test_object_x_pos,
-            ", y: ",
-            test_object_y_pos,
-            ", z: ",
-            test_object_z_pos,
-            "}}, scale: {x: 0.001, y: 0.001, z: .001}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
-            "package://robotic_depowdering/test_parts/",
-            test_object,
-            ".bin.stl",
-            "\"}\"",
-        ]],
-        shell=True,
-    )
-
     # Delay rviz start after `joint_state_broadcaster`
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -325,16 +297,26 @@ def generate_launch_description():
         )
     )
 
-    # Delay publishing object to /visualization_marker after RViz set up
-    delay_publish_object_to_vis_topic = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=rviz_node,
-            on_start=[publish_object_cmd]
-        )
-    )
+    # Maybe we keep this.
+    # # Launch robotic_depowdering service.
+    # robotic_depowdering_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource([
+    #         PathJoinSubstitution([
+    #             FindPackageShare('robotic_depowdering'),
+    #             'launch',
+    #             'robotic_depowdering.launch.py',
+    #         ])
+    #     ]),
+    #     launch_arguments={
+    #         'test_object' : test_object_obj_path,
+    #         'test_object_x_pos' : test_object_x_pos,
+    #         'test_object_y_pos' : test_object_y_pos,
+    #         'test_object_z_pos' : test_object_z_pos,
+    #     }.items()
+    # )
 
-    # Launch robotic_depowdering service.
-    
+    # Delay the launch of the robotic_depowdering service until after the object is in the scene.
+
 
 
     nodes = [
@@ -348,7 +330,7 @@ def generate_launch_description():
         gpio_controller_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
-        delay_publish_object_to_vis_topic,
+        # delay_publish_object_to_vis_topic,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

@@ -44,25 +44,22 @@ ament_target_dependencies(server rclcpp example_interfaces)
 add_executable(client src/add_two_ints_client.cpp)
 ament_target_dependencies(client rclcpp example_interfaces)
 
-add_executable(gpd_service src/gpd_service.cpp)
-ament_target_dependencies(gpd_service rclcpp robotic_depowdering_interfaces tf2 tf2_ros tf2_eigen Eigen3)
-target_link_libraries(gpd_service ${PCL_LIBRARIES} gpd)
-target_link_directories(gpd_service PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
-target_include_directories(gpd_service PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)
-
 add_executable(gripper_test src/gripper_test.cpp)
 ament_target_dependencies(gripper_test rclcpp)
 target_link_libraries(gripper_test flexiv_rdk.x86_64-linux-gnu)
 target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
 target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
-add_executable(pick_up_object src/pick_up_object.cpp)
-ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces)
+add_executable(pick_up_object src/pick_up_object.cpp src/gpd_interface.cpp)
+ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
+target_link_libraries(pick_up_object ${PCL_LIBRARIES} gpd)
+target_link_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
+target_include_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)
+
 
 install( TARGETS
   server
   client
-  gpd_service
   pick_up_object
   gripper_test
   DESTINATION lib/${PROJECT_NAME}
