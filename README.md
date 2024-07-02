@@ -42,5 +42,6 @@ In another terminal run:<br>
 ```
 ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
 ```
+Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
 ### Test parts
-All test parts are in `src/robotic_depowdering/test_parts`. The obj, stl and binary stl are provided. The parts are centered at (0,0,0). The dimensions of the part are in metres. Currently, stl files are in millimetres but this needs to be adjusted.
+All test parts are in `src/robotic_depowdering/test_parts`. The obj, stl and binary stl are provided. The parts are centered at (0,0,0). The dimensions of the part are in metres. If you want to 3D print a part, then CURA will automatically scale the part up to mm. Don't export the part from CURA, as this is unnecessary.
