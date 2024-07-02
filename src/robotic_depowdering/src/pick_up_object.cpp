@@ -3,7 +3,7 @@
 #include "builtin_interfaces/msg/duration.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
-
+#include "gpd_interface.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -17,7 +17,7 @@ using namespace std::chrono_literals;
 int main(int argc, char** argv) {
 
     rclcpp::init(argc, argv);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got %d arguments", argc);
+    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("pick_up_object_client");
 
     // Assume all arguments are correctly formed.
     // Will have to change this.
@@ -40,51 +40,41 @@ int main(int argc, char** argv) {
         obj_z_pos = atof(argv[4]);
     }
 
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("pick_up_object_client");
-    rclcpp::Client<robotic_depowdering_interfaces::srv::GpdGrasp>::SharedPtr client = 
-        node->create_client<robotic_depowdering_interfaces::srv::GpdGrasp>("gpd_service");
+    Eigen::Vector3d test_object_position = {obj_x_pos, obj_y_pos, obj_z_pos};
+
+    std::string test_object_filename = argv[1];
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Test object %s is placed at (%f, %f, %f)", test_object_filename.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
+
+    auto grasp_config = generateGraspPose(test_object_filename);
+
+    if (!grasp_config) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to generate a grasp pose. Check output for details.");
+        return -1;
+    }
+
     
-    auto request = std::make_shared<robotic_depowdering_interfaces::srv::GpdGrasp::Request>();
-    request->file_name = argv[1];
+    // Offset grasp position to account for objects not placed at origin.
+    grasp_config->setPosition(grasp_config->getPosition() + test_object_position);
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Test object %s is placed at (%f, %f, %f)", request->file_name.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tposition: <%f, %f, %f>", 
+        grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tapproach: <%f, %f, %f>", 
+        grasp_config->getApproach().x(), grasp_config->getApproach().y(), grasp_config->getApproach().z());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tbinormal: <%f, %f, %f>", 
+        grasp_config->getBinormal().x(), grasp_config->getBinormal().y(), grasp_config->getBinormal().z());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taxis: <%f, %f, %f>", 
+        grasp_config->getAxis().x(), grasp_config->getAxis().y(), grasp_config->getAxis().z());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taperture: %f", 
+        grasp_config->getGraspWidth());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tscore: %f", 
+        grasp_config->getScore());
+    
 
-    while (!client->wait_for_service(1s)) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
-            return 0;
-        }
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service gpd_service unavailable");
-    }
-
-    auto resultFuture = client->async_send_request(request);
-    std::shared_ptr<robotic_depowdering_interfaces::srv::GpdGrasp::Response> result;
-    // Wait for the result
-    if (rclcpp::spin_until_future_complete(node, resultFuture) == 
-        rclcpp::FutureReturnCode::SUCCESS) 
-    {
-        result = resultFuture.get();
-        if (result.get()->found_grasp) {
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got back grasp configuration.");
-        } else {
-            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to return a grasp configuration");
-            return -2;
-        }
-        
-    } else {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service");
-        return -3;
-    }
-
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tposition: <%f, %f, %f>", result.get()->position.x, result.get()->position.y, result.get()->position.z);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tapproach: <%f, %f, %f>", result.get()->approach.x, result.get()->approach.y, result.get()->approach.z);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tbinormal: <%f, %f, %f>", result.get()->binormal.x, result.get()->binormal.y, result.get()->binormal.z);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taxis: <%f, %f, %f>", result.get()->axis.x, result.get()->axis.y, result.get()->axis.z);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taperture: %f", result.get()->width);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tscore: %f", result.get()->score);
 
     // Carry out IK 
     //   \/\/\/\/
+    // This simply sets random positions.
     std::vector<double> positions(7);
     srand((unsigned int)time(NULL));
     for (auto& pos : positions) {
@@ -122,7 +112,15 @@ int main(int argc, char** argv) {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
     }
 
-    
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent the arm to go to <%f, %f, %f, %f, %f, %f, %f>", 
+        positions[0], 
+        positions[1], 
+        positions[2], 
+        positions[3], 
+        positions[4], 
+        positions[5], 
+        positions[6]
+    );
 
     rclcpp::shutdown();
     return 0;

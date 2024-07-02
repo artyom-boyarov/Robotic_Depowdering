@@ -1,32 +1,21 @@
-#include "rclcpp/rclcpp.hpp"
-#include "robotic_depowdering_interfaces/srv/gpd_grasp.hpp"
-#include "ament_index_cpp/get_package_share_directory.hpp"
-#include "gpd/grasp_detector.h"
-#include "gpd/util/config_file.h"
-#include "tf2_eigen/tf2_eigen.hpp"
-#include "pcl/PolygonMesh.h"
-#include "pcl/io/io.h"
-#include "pcl/io/vtk_lib_io.h"
-#include "pcl/io/obj_io.h"
+#include "gpd_interface.hpp"
 
 
 #include <memory>
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
-
 #define LINE std::cout << __LINE__ << "\n"
 
-void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv::GpdGrasp::Request> request,
-                       std::shared_ptr<robotic_depowdering_interfaces::srv::GpdGrasp::Response> response)
+// Generates grasp pose for the given object. Assumes the object is centered at (0,0,0)
+std::unique_ptr<gpd::candidate::Hand> generateGraspPose(std::string filename)
 {
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request to get grasp pose for file %s", request->file_name.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request to get grasp pose for file %s", filename);
     
     // Convert OBJ to PCD
     // $ pcl_mesh_sampling GPDtest.obj GPDtestMeshSampling.pcd -leaf_size 0.0001
     
-    auto filename = request->file_name;
     std::string filename_pcd{filename};
     filename_pcd.replace(filename_pcd.size() - 4, 4, ".pcd");
 
@@ -55,8 +44,7 @@ void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv
     if (res != 0)
     {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to convert OBJ file to Point Cloud. See logs for output from pcl_mesh_sampling command. Perhaps the file does not exist.");
-        response->found_grasp = false;
-        return;
+        return nullptr;
     }
     // Create GraspDetector and run
 
@@ -69,8 +57,7 @@ void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv
     if (!config_file.ExtractKeys())
     {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to load config file. Check the file exists and has been installed into install/robotic_depowdering/share/robotic_depowdering/cfg/rizon_4s.cfg");
-        response->found_grasp = false;
-        return;
+        return nullptr;
     }
 
     // Set the camera position. Assumes a single camera view.
@@ -85,8 +72,7 @@ void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv
     if (cloud.getCloudOriginal()->size() == 0)
     {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Point cloud of OBJ file is empty or does not exist. Run pcl_mesh_sampling manually to check for errors. Visualize the point cloud with pcl_viewer [could.pcd].");
-        response->found_grasp = false;
-        return;
+        return nullptr;
     }
 
     // This generates a bounding box for the workspace. Might come in handy later to work with objects in varying locations.
@@ -130,32 +116,32 @@ void generateGraspPose(const std::shared_ptr<robotic_depowdering_interfaces::srv
     auto grasps = detector.detectGrasps(cloud);
     if (grasps.size() == 0) {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to find any grasps. Run GPD's detect_grasps executable manually to debug. Check that parameters in the config are correct, namely workspace, max_aperture, and hand geometry");
-        response->found_grasp = false;
-        return;
+        return nullptr;
     }
-
     auto hand = std::move(grasps[0]);
-    response->found_grasp = true;
-    response->position = tf2::toMsg(hand->getPosition());
-    response->approach = tf2::toMsg(hand->getApproach(), response->approach);
-    response->binormal = tf2::toMsg(hand->getBinormal(), response->approach);
-    response->axis = tf2::toMsg(hand->getAxis(), response->approach);
-    response->width = hand->getGraspWidth();
-    response->score = hand->getScore();
-    response->sample = tf2::toMsg(hand->getSample());
+
+    return hand;
+    // response->found_grasp = true;
+    // response->position = tf2::toMsg(hand->getPosition());
+    // response->approach = tf2::toMsg(hand->getApproach(), response->approach);
+    // response->binormal = tf2::toMsg(hand->getBinormal(), response->approach);
+    // response->axis = tf2::toMsg(hand->getAxis(), response->approach);
+    // response->width = hand->getGraspWidth();
+    // response->score = hand->getScore();
+    // response->sample = tf2::toMsg(hand->getSample());
 }
 
-int main(int argc, char **argv)
-{
-    rclcpp::init(argc, argv);
+// int main(int argc, char **argv)
+// {
+//     rclcpp::init(argc, argv);
 
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("gpd_service");
+//     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("gpd_service");
 
-    rclcpp::Service<robotic_depowdering_interfaces::srv::GpdGrasp>::SharedPtr service =
-        node->create_service<robotic_depowdering_interfaces::srv::GpdGrasp>("gpd_service", &generateGraspPose);
+//     rclcpp::Service<robotic_depowdering_interfaces::srv::GpdGrasp>::SharedPtr service =
+//         node->create_service<robotic_depowdering_interfaces::srv::GpdGrasp>("gpd_service", &generateGraspPose);
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Initialized GPD interface service. Call this service to generate grasps for a given file");
+//     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Initialized GPD interface service. Call this service to generate grasps for a given file");
 
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-}
+//     rclcpp::spin(node);
+//     rclcpp::shutdown();
+// }
