@@ -89,8 +89,8 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             test_object_param_name,
-            default_value="Buckle.bin.stl",
-            description="File name (without directory) of the test object to be placed in scene which the robot has to pick up.",
+            default_value="Buckle",
+            description="File name (without directory and extension) of the test object to be placed in scene which the robot has to pick up.",
         )
     )
 
@@ -301,6 +301,7 @@ def generate_launch_description():
             "}}, scale: {x: 0.001, y: 0.001, z: .001}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
             "package://robotic_depowdering/test_parts/",
             test_object,
+            ".bin.stl",
             "\"}\"",
         ]],
         shell=True,
@@ -331,6 +332,10 @@ def generate_launch_description():
             on_start=[publish_object_cmd]
         )
     )
+
+    # Launch robotic_depowdering service.
+    
+
 
     nodes = [
         ros2_control_node,

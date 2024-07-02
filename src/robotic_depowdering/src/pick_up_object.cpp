@@ -12,14 +12,32 @@
 
 using namespace std::chrono_literals;
 
-
+// Should this run only once, or multiple times?
+// Turn this into an action.
 int main(int argc, char** argv) {
 
     rclcpp::init(argc, argv);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got %d arguments", argc);
 
-    if (argc != 2) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj]");
+    // Assume all arguments are correctly formed.
+    // Will have to change this.
+    if (argc < 2) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj] [x-coord=0.0] [y-coord=0.0] [z-coord=0.0]");
         return -1;
+    }
+
+    float obj_x_pos = 0.0f, obj_y_pos = 0.0f, obj_z_pos = 0.0f;
+    if (argc >= 3) {
+        // x pos set
+        obj_x_pos = atof(argv[2]);
+    }
+    if (argc >= 4) {
+        // y pos set
+        obj_y_pos = atof(argv[3]);
+    }
+    if (argc >= 5) {
+        // y pos set
+        obj_z_pos = atof(argv[4]);
     }
 
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("pick_up_object_client");
@@ -28,6 +46,8 @@ int main(int argc, char** argv) {
     
     auto request = std::make_shared<robotic_depowdering_interfaces::srv::GpdGrasp::Request>();
     request->file_name = argv[1];
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Test object %s is placed at (%f, %f, %f)", request->file_name.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
 
     while (!client->wait_for_service(1s)) {
         if (!rclcpp::ok()) {
