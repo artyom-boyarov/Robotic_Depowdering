@@ -25,7 +25,6 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             test_object_param_name,
-            default_value="Buckle.obj",
             description="File name of the object (without directory and with .obj extension) of the test object to be placed in scene which the robot has to pick up.",
         )
     )
@@ -98,7 +97,7 @@ def generate_launch_description():
             test_object_y_pos,
             ", z: ",
             test_object_z_pos,
-            "}}, scale: {x: 0.001, y: 0.001, z: .001}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
+            "}}, scale: {x: 1, y: 1, z: 1}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
             "package://robotic_depowdering/test_parts/",
             test_object,
             ".bin.stl",
