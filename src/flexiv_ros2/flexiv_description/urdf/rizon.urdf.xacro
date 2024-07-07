@@ -24,7 +24,7 @@
 
   <!-- convert to property to use substitution in function -->
   <xacro:property name="initial_positions_file" default="$(arg initial_positions_file)"/>
-
+  
   <xacro:rizon_robot 
     rizon_type="$(arg rizon_type)" 
     rizon_prefix="$(arg rizon_prefix)" 
@@ -35,15 +35,15 @@
     initial_positions="${xacro.load_yaml(initial_positions_file)}">
   </xacro:rizon_robot>
 
-
-  <!-- Include the gripper macro with the appropriate prefix-->   
+  <!--
+  <! Include the gripper macro with the appropriate prefix  
   <xacro:gripper gripper_prefix="$(arg gripper_prefix)"/>
   <joint name="$(arg gripper_prefix)base_joint" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="$(arg rizon_prefix)flange"/>
     <child link="$(arg gripper_prefix)base_link"/>
   </joint>
-  
+  -->
   <!-- JointStatePublisher publishes joint state information for the model.
          In future versions of Gazebo, replace 'ignition-gazebo' with 'gz-sim' and
          'ignition::gazebo' with 'gz::sim'
