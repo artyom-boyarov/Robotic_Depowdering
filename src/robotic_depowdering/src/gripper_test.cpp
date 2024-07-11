@@ -126,13 +126,21 @@ int main(int argc, char* argv[])
         std::thread printThread(printGripperStates, std::ref(gripper), std::ref(log));
 
         // Position control
-        log.info("Closing gripper");
-        gripper.move(0.01, 0.1, 20);
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        // log.info("Closing gripper");
+        // gripper.move(0.01, 0.1, 20);
+        // std::this_thread::sleep_for(std::chrono::seconds(2));
         log.info("Opening gripper");
+        // Make sure to sleep for sufficient time after running this operation. 
         gripper.move(0.09, 0.1, 20);
         std::this_thread::sleep_for(std::chrono::seconds(2));
-
+        
+        log.info("Closing gripper");
+        // This won't execute since the next function will immediately be called.
+        // Make sure you sleep the thread for enough time before stopping,
+        gripper.move(0.01, 0.1, 20);
+        log.info("Opening gripper without waiting");
+        gripper.move(0.09, 0.1, 20);
+        
         // Stop
         log.info("Closing gripper");
         gripper.move(0.01, 0.1, 20);
@@ -150,18 +158,32 @@ int main(int argc, char* argv[])
         gripper.stop();
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
+        // Grasp the part
+        log.info("Opening gripper for part");
+        gripper.move(0.1, 0.1);
+        // You need to wait until the gripper opens.
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        log.info("Hold the part beneath the gripper");
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        log.info("Closing gripper for part");
+        // gripper.move(0.01, 0.1);
+        // For more on the gripper: https://rdk.flexiv.com/api/classflexiv_1_1_gripper.html 
+        gripper.grasp(5); // Try grasp with 5N. // Blocking operation. Grasps until it can grasp.
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         // Force control, if available (sensed force is not zero)
         flexiv::GripperStates gripperStates;
         gripper.getGripperStates(gripperStates);
         if (fabs(gripperStates.force) > std::numeric_limits<double>::epsilon()) {
             log.info("Gripper running zero force control");
-            gripper.grasp(0);
+            // gripper.grasp(0); // TODO: Uncomment
             // Exit after 10 seconds
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
 
         // Finished, exit all threads
         gripper.stop();
+        // Now the gripper will continue grasping the object until released.
         g_isDone = true;
         log.info("Program finished");
         printThread.join();
