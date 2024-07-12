@@ -80,6 +80,8 @@ In another terminal run:<br>
 ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
 ```
 Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
+<br>
+More in-depth instructions are located at <a> https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing </a>.
 #### Without robot (just simulation)
 In one terminal run:<br>
 ```
