@@ -16,6 +16,25 @@ Install dependencies (from packages + pcl_tools):<br>
 rosdep install --from-paths src --ignore-src -r -y
 sudo apt install pcl-tools -y
 ```
+Install dependencies for the Flexiv ROS2 packages:
+```
+sudo apt install -y \
+python3-colcon-common-extensions \
+python3-rosdep2 \
+libeigen3-dev \
+ros-humble-xacro \
+ros-humble-tinyxml2-vendor \
+ros-humble-ros2-control \
+ros-humble-realtime-tools \
+ros-humble-control-toolbox \
+ros-humble-moveit \
+ros-humble-ros2-controllers \
+ros-humble-test-msgs \
+ros-humble-joint-state-publisher \
+ros-humble-joint-state-publisher-gui \
+ros-humble-robot-state-publisher \
+ros-humble-rviz2
+```
 First, build gpd:<br>
 ```
 colcon build --symlink-install --packages-select gpd
