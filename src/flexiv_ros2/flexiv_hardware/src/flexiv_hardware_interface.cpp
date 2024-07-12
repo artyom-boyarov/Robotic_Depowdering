@@ -167,6 +167,8 @@ std::vector<hardware_interface::StateInterface> FlexivHardwareInterface::export_
             info_.joints[i].name, hardware_interface::HW_IF_EFFORT, &hw_states_joint_efforts_[i]));
     }
 
+    RCLCPP_INFO(getLogger(), "Added joints");
+
     for (std::size_t i = 0; i < info_.sensors.size(); i++) {
         const auto& sensor = info_.sensors[i];
         for (std::size_t j = 0; j < sensor.state_interfaces.size(); j++) {
@@ -185,12 +187,16 @@ std::vector<hardware_interface::StateInterface> FlexivHardwareInterface::export_
             }
         }
     }
+    RCLCPP_INFO(getLogger(), "Added sensors");
 
-    const std::string prefix = info_.hardware_parameters.at("prefix");
+    // Changed prefix to rizon_prefix. TODO: Add a comment on GH flexiv.
+    const std::string prefix = info_.hardware_parameters.at("rizon_prefix");
     for (std::size_t i = 0; i < 16; i++) {
         state_interfaces.emplace_back(hardware_interface::StateInterface(
             prefix + "gpio", "digital_input_" + std::to_string(i), &hw_states_gpio_in_[i]));
     }
+    RCLCPP_INFO(getLogger(), "Added digital interfaces");
+    
 
     return state_interfaces;
 }
@@ -210,7 +216,8 @@ FlexivHardwareInterface::export_command_interfaces()
             hardware_interface::HW_IF_EFFORT, &hw_commands_joint_efforts_[i]));
     }
 
-    const std::string prefix = info_.hardware_parameters.at("prefix");
+    // And change this also from prefix to rizon_prefix
+    const std::string prefix = info_.hardware_parameters.at("rizon_prefix");
     for (size_t i = 0; i < 16; i++) {
         command_interfaces.emplace_back(hardware_interface::CommandInterface(
             prefix + "gpio", "digital_output_" + std::to_string(i), &hw_commands_gpio_out_[i]));

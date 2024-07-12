@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <memory>
 #include <ctime>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -75,11 +76,12 @@ int main(int argc, char** argv) {
     // Carry out IK 
     //   \/\/\/\/
     // This simply sets random positions.
-    std::vector<double> positions(7);
-    srand((unsigned int)time(NULL));
-    for (auto& pos : positions) {
-        pos = (float)rand() / RAND_MAX;
-    }
+    std::vector<double> positions1 = {-1.40, -0.70, 0.00, 1.57, 0.01, 0.69, 0.00};
+    std::vector<double> positions2 = {-1.81, -0.70, 0.00, 1.57, 0.01, 0.69, 0.00};
+    // srand((unsigned int)time(NULL));
+    // for (auto& pos : positions) {
+    //     pos = (float)rand() / RAND_MAX;
+    // }
     
 
     // Now, after we've done IK, we publish the list of joint angles for the 7 joints to "/rizon_arm_controller/joint_trajectory".
@@ -98,7 +100,7 @@ int main(int argc, char** argv) {
       "joint7"});
     
     trajectory_msgs::msg::JointTrajectoryPoint armPoint;
-    armPoint.positions = positions;
+    armPoint.positions = positions1;
     auto duration = builtin_interfaces::msg::Duration();
     duration.sec = 1;
     armPoint.time_from_start = duration;
@@ -113,14 +115,61 @@ int main(int argc, char** argv) {
     }
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent the arm to go to <%f, %f, %f, %f, %f, %f, %f>", 
-        positions[0], 
-        positions[1], 
-        positions[2], 
-        positions[3], 
-        positions[4], 
-        positions[5], 
-        positions[6]
+        positions1[0], 
+        positions1[1], 
+        positions1[2], 
+        positions1[3], 
+        positions1[4], 
+        positions1[5], 
+        positions1[6]
     );
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for 5 seconds");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    armPoint.positions = positions2;
+    jointTrajectoryMessage.points = {armPoint};
+    try {
+        jointTrajectoryPublisher->publish(jointTrajectoryMessage);
+        rclcpp::spin_some(node);
+    } catch (const rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
+    }
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent the arm to go to <%f, %f, %f, %f, %f, %f, %f>", 
+        positions2[0], 
+        positions2[1], 
+        positions2[2], 
+        positions2[3], 
+        positions2[4], 
+        positions2[5], 
+        positions2[6]
+    );
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for 5 seconds");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    
+    armPoint.positions = positions1;
+    jointTrajectoryMessage.points = {armPoint};
+
+    try {
+        jointTrajectoryPublisher->publish(jointTrajectoryMessage);
+        rclcpp::spin_some(node);
+    } catch (const rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
+    }
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent the arm to go to <%f, %f, %f, %f, %f, %f, %f>", 
+        positions1[0], 
+        positions1[1], 
+        positions1[2], 
+        positions1[3], 
+        positions1[4], 
+        positions1[5], 
+        positions1[6]
+    );
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for 5 seconds");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
 
     rclcpp::shutdown();
     return 0;
