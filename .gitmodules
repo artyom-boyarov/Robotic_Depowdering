@@ -2,3 +2,12 @@
 	path = flexiv_hardware/rdk
 	url = https://github.com/flexivrobotics/flexiv_rdk
 	branch = main
+[submodule "src/graph_msgs"]
+	path = src/graph_msgs
+	url = https://github.com/PickNikRobotics/graph_msgs
+[submodule "src/moveit_visual_tools"]
+	path = src/moveit_visual_tools
+	url = https://github.com/moveit/moveit_visual_tools
+[submodule "src/rviz_visual_tools"]
+	path = src/rviz_visual_tools
+	url = https://github.com/PickNikRobotics/rviz_visual_tools
