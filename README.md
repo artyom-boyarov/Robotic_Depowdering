@@ -62,6 +62,25 @@ Also install ```pcl-tools``` : <br>
 ```sudo apt install pcl-tools```
 ## Running
 ### Pick up object + visualization
+#### With real robot
+Connect robot and power it on. Test connection:
+```
+ping 192.168.2.100
+```
+Find your IP address: (look for ```inet``` under ```eth0```):
+```
+ifconfig
+```
+In one terminal run:<br>
+```
+ros2 launch flexiv_bringup rizon_with_object_pickup.launch.py robot_ip:=192.167.2.100 local_ip:=[your IP]
+```
+In another terminal run:<br>
+```
+ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
+```
+Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
+#### Without robot (just simulation)
 In one terminal run:<br>
 ```
 ros2 launch flexiv_bringup rizon_with_object_pickup.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
