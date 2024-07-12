@@ -6,7 +6,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
   // Initialize ROS and create the Node
   rclcpp::init(argc, argv);
@@ -21,17 +21,19 @@ int main(int argc, char * argv[])
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node);
   auto spinner = std::thread([&executor]() { executor.spin(); });
-  // Next step goes here
+
   // Create the MoveIt MoveGroup Interface
   using moveit::planning_interface::MoveGroupInterface;
-  auto move_group_interface = MoveGroupInterface(node, "rizon_4s");
+  auto move_group_interface = MoveGroupInterface(node, "rizon_arm");
+
   // Construct and initialize MoveItVisualTools
   auto moveit_visual_tools = moveit_visual_tools::MoveItVisualTools{
       node, "base_link", rviz_visual_tools::RVIZ_MARKER_TOPIC,
       move_group_interface.getRobotModel()};
   moveit_visual_tools.deleteAllMarkers();
   moveit_visual_tools.loadRemoteControl();
-  // Create a closures for visualization
+
+  // Create closures for visualization
   auto const draw_title = [&moveit_visual_tools](auto text) {
     auto const text_pose = [] {
       auto msg = Eigen::Isometry3d::Identity();
@@ -47,75 +49,65 @@ int main(int argc, char * argv[])
   auto const draw_trajectory_tool_path =
       [&moveit_visual_tools,
       jmg = move_group_interface.getRobotModel()->getJointModelGroup(
-          "rizon_4s")](auto const trajectory) {
+          "rizon_arm")](auto const trajectory) {
         moveit_visual_tools.publishTrajectoryLine(trajectory, jmg);
       };
+
+  // Parse command line arguments for target pose
+  if (argc != 8)
+  {
+    RCLCPP_ERROR(logger, "Usage: rizon_pick_and_place x y z qx qy qz qw");
+    rclcpp::shutdown();
+    return 1;
+  }
+
+  double x = std::stod(argv[1]);
+  double y = std::stod(argv[2]);
+  double z = std::stod(argv[3]);
+  double qx = std::stod(argv[4]);
+  double qy = std::stod(argv[5]);
+  double qz = std::stod(argv[6]);
+  double qw = std::stod(argv[7]);
+
   // Set a target Pose
-  auto const target_pose = []{
-    geometry_msgs::msg::Pose msg;
-    msg.orientation.w = 1.0;
-    msg.position.x = 0.2;
-    msg.position.y = 0.2;
-    msg.position.z = 0.25;
-    return msg;
-}();
-move_group_interface.setPoseTarget(target_pose);
-/*
-// Create collision object for the robot to avoid
-auto const collision_object = [frame_id =
-                                 move_group_interface.getPlanningFrame()] {
-  moveit_msgs::msg::CollisionObject collision_object;
-  collision_object.header.frame_id = frame_id;
-  collision_object.id = "box1";
-  shape_msgs::msg::SolidPrimitive primitive;
+  geometry_msgs::msg::Pose target_pose;
+  target_pose.position.x = x;
+  target_pose.position.y = y;
+  target_pose.position.z = z;
+  target_pose.orientation.x = qx;
+  target_pose.orientation.y = qy;
+  target_pose.orientation.z = qz;
+  target_pose.orientation.w = qw;
 
-  // Define the size of the box in meters
-  primitive.type = primitive.BOX;
-  primitive.dimensions.resize(3);
-  primitive.dimensions[primitive.BOX_X] = 0.5;
-  primitive.dimensions[primitive.BOX_Y] = 0.1;
-  primitive.dimensions[primitive.BOX_Z] = 0.5;
+  move_group_interface.setPoseTarget(target_pose);
 
-  // Define the pose of the box (relative to the frame_id)
-  geometry_msgs::msg::Pose box_pose;
-  box_pose.orientation.w = 1.0;
-  box_pose.position.x = 0.2;
-  box_pose.position.y = 0.2;
-  box_pose.position.z = 0.25;
-
-  collision_object.primitives.push_back(primitive);
-  collision_object.primitive_poses.push_back(box_pose);
-  collision_object.operation = collision_object.ADD;
-
-  return collision_object;
-}();
-// Add the collision object to the scene
-moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-planning_scene_interface.applyCollisionObject(collision_object);
-*/
-// Create a plan to that target pose
-prompt("Press 'Next' in the RvizVisualToolsGui window to plan");
-draw_title("Planning");
-moveit_visual_tools.trigger();
-auto const [success, plan] = [&move_group_interface] {
-  moveit::planning_interface::MoveGroupInterface::Plan msg;
-  auto const ok = static_cast<bool>(move_group_interface.plan(msg));
-  return std::make_pair(ok, msg);
-}();
-
-// Execute the plan
-if (success) {
-  draw_trajectory_tool_path(plan.trajectory_);
+  // Create a plan to that target pose
+  prompt("Press 'Next' in the RvizVisualToolsGui window to plan");
+  draw_title("Planning");
   moveit_visual_tools.trigger();
-  prompt("Press 'Next' in the RvizVisualToolsGui window to execute");
-  draw_title("Executing");
-  moveit_visual_tools.trigger();
-  move_group_interface.execute(plan);
-} else {
-  draw_title("Planning Failed!");
-  moveit_visual_tools.trigger();
-  RCLCPP_ERROR(logger, "Planing failed!");
-}
+  auto const [success, plan] = [&move_group_interface] {
+    moveit::planning_interface::MoveGroupInterface::Plan msg;
+    auto const ok = static_cast<bool>(move_group_interface.plan(msg));
+    return std::make_pair(ok, msg);
+  }();
+
+  // Execute the plan
+  if (success)
+  {
+    draw_trajectory_tool_path(plan.trajectory_);
+    moveit_visual_tools.trigger();
+    prompt("Press 'Next' in the RvizVisualToolsGui window to execute");
+    draw_title("Executing");
+    moveit_visual_tools.trigger();
+    move_group_interface.execute(plan);
+  }
+  else
+  {
+    draw_title("Planning Failed!");
+    moveit_visual_tools.trigger();
+    RCLCPP_ERROR(logger, "Planning failed!");
+  }
+
   // Shutdown ROS
   rclcpp::shutdown();
   spinner.join();

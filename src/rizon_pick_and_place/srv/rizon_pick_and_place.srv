@@ -1,0 +1,4 @@
+# rizon_pick_and_place.srv
+geometry_msgs/Pose target_pose
+---
+bool success
