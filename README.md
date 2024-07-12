@@ -39,6 +39,15 @@ First, build gpd:<br>
 ```
 colcon build --symlink-install --packages-select gpd
 ```
+Then build the flexiv rdk:
+```
+cd src/flexiv_ros2/flexiv_hardware/rdk
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=<where you cloned this repo>/install/flexiv_rdk
+make
+sudo make install
+```
 Then build everything else: <br>
 ```
 colcon build --symlink-install
