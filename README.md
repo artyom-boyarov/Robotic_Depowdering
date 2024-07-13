@@ -5,6 +5,50 @@
 - ```gpd```: Grasp Pose Detection, used to detect where to grasp an object.
 - ```robotic_depowdering```: nodes and services used in the depowdering process.
 - ```robotic_depowdering_interfaces```: message and service definitions used by ```robotic_depowdering```.
+## System requirements
+This project requires the following software versions:
+<table>
+  <tr>
+    <td>Ubuntu</td>
+    <td>ROS2</td>
+    <td>Gazebo</td>
+  </tr>
+  <tr>
+    <td>22.04</td>
+    <td>Humble</td>
+    <td>Fortress</td>
+  </tr>
+</table>
+
+Depending on what platform you decide to develop for this robot, you'll be able to do the following:
+<table>
+  <tr>
+    <td>Platform</td>
+    <td>Simulation of robot in RViz + Gazebo</td>
+    <td>Control of physical robot from your host machine</td>
+  </tr>
+  <tr>
+    <td>Native Ubuntu 22.04 install (or dual boot)</td>
+    <td>✔️</td>
+    <td>✔️</td>
+  </tr>
+  <tr>
+    <td>Ubuntu 22.04 virtual machine</td>
+    <td>✔️</td>
+    <td>❌</td>
+  </tr>
+  <tr>
+    <td>Docker container (on Linux, Windows, or Mac)</td>
+    <td>✔️</td>
+    <td>❌</td>
+  </tr>
+  <tr>
+    <td>WSL2 Ubuntu 22.04</td>
+    <td>✔️</td>
+    <td>❌</td>
+  </tr>
+</table>
+
 
 ## Setup
 Source ROS underlay: <br>
@@ -57,9 +101,6 @@ In any terminal where you run code, do: <br>
 source /opt/ros/humble/setup.sh
 source install/setup.sh
 ```
-## Additional dependencies
-Also install ```pcl-tools``` : <br>
-```sudo apt install pcl-tools```
 ## Running
 ### Pick up object + visualization
 #### With real robot
@@ -77,11 +118,16 @@ ros2 launch flexiv_bringup rizon_with_object_pickup.launch.py robot_ip:=192.167.
 ```
 In another terminal run:<br>
 ```
-ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
+ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=-0.015
 ```
-Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
-<br>
-More in-depth instructions are located at <a> https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing </a>.
+Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.<br>
+
+> [!TIP]
+> The robot's base plate is 15 mm thick, so if you place the object flat on the table it will be at z = -0.015.
+
+> [!TIP]
+> More in-depth instructions are located at <a> https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing </a>.
+
 #### Without robot (just simulation)
 In one terminal run:<br>
 ```
