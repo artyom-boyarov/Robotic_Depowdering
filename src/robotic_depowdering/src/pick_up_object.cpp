@@ -4,6 +4,7 @@
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "gpd_interface.hpp"
+#include "rizon_pick_and_place/srv/MoveToPose.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -71,7 +72,41 @@ int main(int argc, char** argv) {
         grasp_config->getScore());
     
 
+    // Set the target pose for the robot to move to
+    auto target_pose = geometry_msgs::msg::Pose();
+    target_pose.position.x = grasp_config->getPosition().x();
+    target_pose.position.y = grasp_config->getPosition().y();
+    target_pose.position.z = grasp_config->getPosition().z();
+    target_pose.orientation.w = 1.0;  // Assuming no rotation for simplicity
+    target_pose.orientation.x = 0.0;
+    target_pose.orientation.y = 0.0;
+    target_pose.orientation.z = 0.0;
 
+    // Create a service client to call the move_to_pose service
+    auto client = node->create_client<rizon_pick_and_place::srv::MoveToPose>("move_to_pose");
+    while (!client->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+            return 0;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
+    }
+
+    auto request = std::make_shared<rizon_pick_and_place::srv::MoveToPose::Request>();
+    request->target_pose = target_pose;
+
+    auto result = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully moved to target pose.");
+        } else {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to move to target pose.");
+        }
+    } else {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service move_to_pose");
+    }
+
+    /*
     // Carry out IK 
     //   \/\/\/\/
     // This simply sets random positions.
@@ -121,6 +156,9 @@ int main(int argc, char** argv) {
         positions[5], 
         positions[6]
     );
+    */
+
+
 
     rclcpp::shutdown();
     return 0;

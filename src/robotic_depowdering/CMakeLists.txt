@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(rizon_pick_and_place REQUIRED)
 
 
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -51,7 +52,7 @@ target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros
 target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
 add_executable(pick_up_object src/pick_up_object.cpp src/gpd_interface.cpp)
-ament_target_dependencies(pick_up_object rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
+ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
 target_link_libraries(pick_up_object ${PCL_LIBRARIES} gpd)
 target_link_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
 target_include_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)

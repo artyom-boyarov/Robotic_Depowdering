@@ -10,20 +10,32 @@ find_package(ament_cmake REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
-add_executable(rizon_pick_and_place src/rizon_pick_and_place.cpp)
-target_include_directories(rizon_pick_and_place PUBLIC
+# Generate service files
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/MoveToPose.srv"
+  DEPENDENCIES geometry_msgs
+)
+add_library(move_to_pose_service_lib SHARED src/move_to_pose_service.cpp)
+target_link_libraries(move_to_pose_service_lib PUBLIC "${PROJECT_NAME}_msg_srv__rosidl_typesupport_cpp")
+
+add_executable(move_to_pose_service src/move_to_pose_service.cpp)
+target_include_directories(move_to_pose_service PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_compile_features(rizon_pick_and_place PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+  $<INSTALL_INTERFACE:include>
+  ${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp)
+  
+target_compile_features(move_to_pose_service PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-  rizon_pick_and_place
+  move_to_pose_service
   "moveit_ros_planning_interface"
   "rclcpp"
   "moveit_visual_tools"
 )
 
-install(TARGETS rizon_pick_and_place
+
+install(TARGETS move_to_pose_service
   DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
