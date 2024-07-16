@@ -1,7 +1,7 @@
 # Robotic Depowdering Github Repo
 
 ## Packages
-- ```flexiv_ros2```: contains the Flexiv RDK for interfacing with the Flexiv Rizon 4s.
+- ```flexiv_ros2```: contains the Flexiv ROS2 package and RDK, used for interfacing with, controlling and simulating the Flexiv Rizon 4s.
 - ```gpd```: Grasp Pose Detection, used to detect where to grasp an object.
   - <b>When adding gpd as a dependency</b>: don't add gpd as a ament package. GPD doesn't support this. Look into ```src/robotic_depowdering/CMakeLists.txt``` to see how you can add gpd to your package.
 - ```robotic_depowdering```: nodes and services used in the depowdering process.
@@ -21,7 +21,7 @@ This project requires the following software versions:
   </tr>
 </table>
 
-Depending on what platform you decide to develop for this robot, you'll be able to do the following:
+The following options for which platform you run the software on are supported. Depending on the platform you decide to use to develop for this robot, you'll be able to do the following:
 <table>
   <tr>
     <td>Platform</td>
@@ -34,7 +34,7 @@ Depending on what platform you decide to develop for this robot, you'll be able 
     <td>✔️</td>
   </tr>
   <tr>
-    <td>Ubuntu 22.04 virtual machine</td>
+    <td>Ubuntu 22.04 virtual machine (Linux, Windows, Mac)</td>
     <td>✔️</td>
     <td>❌</td>
   </tr>
@@ -52,7 +52,38 @@ Depending on what platform you decide to develop for this robot, you'll be able 
 
 
 ## Setup
-Source ROS underlay: <br>
+Clone the repo, then follow instructions for your system:
+### System-specific instructions
+#### Native Ubuntu 22.04 install
+Skip this section, and follow the general instructions. Nothing extra needs to be done.
+#### Docker Ubuntu 22.04 container
+##### 1. Install docker compose
+Visit [https://docs.docker.com/engine/install/](https://docs.docker.com/compose/install/) and follow instructions for your specific system.
+##### 2. Build the images
+```
+docker compose build
+```
+##### 3. Run the images
+Launch bash in the development container:
+```
+docker compose up -d dev
+docker compose exec -it dev bash
+```
+To develop inside the docker container, install the <a href="https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker">VS Code docker extension</a>. Then, you can open VS code and attach to the running Ubuntu 22.04 container and edit the code inside.
+
+#### Ubuntu 22.04 virtual machine
+Make sure you have 3D acceleration enabled and enough CPU cores. Aim for at least 4 cores and 6 GB of memory.
+#### WSL2 Ubuntu 22.04 instance
+Add this environment variable to fix an OpenGL issue with Gazebo:
+```
+echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
+source ~/.bashrc
+```
+### General instructions
+Follow the installation instructions to install ROS2 Humble and Gazebo Fortress:
+- ROS2: <a>https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html</a>
+- Gazebo: <a>https://gazebosim.org/docs/fortress/install_ubuntu</a>
+Once everything is installed, move onto installing and building this repo. Source ROS underlay: <br>
 ```
 source /opt/ros/humble/setup.sh
 ```
@@ -95,6 +126,7 @@ sudo make install
 ```
 Then build everything else: <br>
 ```
+cd <where you cloned this repo>
 colcon build --symlink-install
 ```
 In any terminal where you run code, do: <br>
@@ -105,6 +137,13 @@ source install/setup.sh
 ## Running
 ### Pick up object + visualization
 #### With real robot
+> [!IMPORTANT]
+> Follow the procedure to connect and set up the robot described in <a href="https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing">the SOP document</a>. Then, move onto these instructions.
+
+> [!CAUTION]
+> Don't damage the Rizon. Test your code thoroughly in simulation to ensure it works.
+> When running code on the Rizon, always keep your finger on the emergency stop button and don't get distracted. The Rizon is an expensive piece of equipment - don't break it.
+
 Connect robot and power it on. Test connection:
 ```
 ping 192.168.2.100
@@ -121,13 +160,10 @@ In another terminal run:<br>
 ```
 ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=-0.015
 ```
-Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.<br>
+Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located. This will make the robot move and pick up the part.<br>
 
-> [!TIP]
+> [!NOTE]
 > The robot's base plate is 15 mm thick, so if you place the object flat on the table it will be at z = -0.015.
-
-> [!TIP]
-> More in-depth instructions are located at <a> https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing </a>.
 
 #### Without robot (just simulation)
 In one terminal run:<br>
@@ -139,7 +175,7 @@ In another terminal run:<br>
 ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
 ```
 Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
-### Test parts
+## Test parts
 - All test parts are in `src/robotic_depowdering/test_parts`. The obj, stl and binary stl are provided.
 - The parts are centered at (0,0,0) in the CAD files - if you place the part at a different location while testing, you pass this location into ```robotic_depowdering.launch.py``` by adjusting the ``` test_object_x_pos```, ```test_object_y_pos```, and ```test_object_z_pos``` parameters, instead of modifying the CAD file.
   - Keep in mind, the Rizon's base plate is 15mm thick. So if you place parts on the ground, and the rizon is on the base plate mounted on the ground, your part's z-coordinate is -0.015.
