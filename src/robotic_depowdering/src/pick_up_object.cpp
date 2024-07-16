@@ -4,7 +4,8 @@
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "gpd_interface.hpp"
-#include "rizon_pick_and_place/srv/MoveToPose.hpp"
+#include "robotic_depowdering_interfaces/srv/move_to_pose.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -77,13 +78,24 @@ int main(int argc, char** argv) {
     target_pose.position.x = grasp_config->getPosition().x();
     target_pose.position.y = grasp_config->getPosition().y();
     target_pose.position.z = grasp_config->getPosition().z();
-    target_pose.orientation.w = 1.0;  // Assuming no rotation for simplicity
-    target_pose.orientation.x = 0.0;
-    target_pose.orientation.y = 0.0;
-    target_pose.orientation.z = 0.0;
+    Eigen::Matrix3d rot_mat;
+    rot_mat << grasp_config->getAxis().x(), grasp_config->getBinormal().x(), grasp_config->getApproach().x(),
+           grasp_config->getAxis().y(), grasp_config->getBinormal().y(), grasp_config->getApproach().y(),
+           grasp_config->getAxis().z(), grasp_config->getBinormal().z(), grasp_config->getApproach().z();
+    Eigen::Quaternion<double> rot_q(rot_mat);
+    rot_q.normalize();
+    target_pose.orientation.w = rot_q.w();
+    target_pose.orientation.x = rot_q.x();
+    target_pose.orientation.y = rot_q.y();
+    target_pose.orientation.z = rot_q.z();
+
+    RCLCPP_INFO(logger, "Got quaternion w:%f x:%f y:%f z:%f", rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+    RCLCPP_INFO(logger, "%f %f %f %f %f %f %f",
+        grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z(),
+        rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
 
     // Create a service client to call the move_to_pose service
-    auto client = node->create_client<rizon_pick_and_place::srv::MoveToPose>("move_to_pose");
+    auto client = node->create_client<robotic_depowdering_interfaces::srv::MoveToPose>("move_to_pose");
     while (!client->wait_for_service(std::chrono::seconds(1))) {
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
@@ -92,7 +104,7 @@ int main(int argc, char** argv) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
     }
 
-    auto request = std::make_shared<rizon_pick_and_place::srv::MoveToPose::Request>();
+    auto request = std::make_shared<robotic_depowdering_interfaces::srv::MoveToPose::Request>();
     request->target_pose = target_pose;
 
     auto result = client->async_send_request(request);

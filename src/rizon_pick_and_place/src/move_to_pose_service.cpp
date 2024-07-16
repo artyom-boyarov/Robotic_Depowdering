@@ -3,7 +3,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
-#include "rizon_pick_and_place/srv/MoveToPose.hpp"
+#include "robotic_depowdering_interfaces/srv/move_to_pose.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 
 class MoveToPoseService : public rclcpp::Node
 {
@@ -11,7 +12,7 @@ public:
   MoveToPoseService() : Node("move_to_pose_service")
   {
     // Create the service
-    service_ = this->create_service<rizon_pick_and_place::srv::MoveToPose>(
+    service_ = this->create_service<robotic_depowdering_interfaces::srv::MoveToPose>(
         "move_to_pose", std::bind(&MoveToPoseService::handle_move_to_pose, this, std::placeholders::_1, std::placeholders::_2));
 
     // Create the MoveIt MoveGroup Interface
@@ -19,7 +20,7 @@ public:
 
     // Construct and initialize MoveItVisualTools
     moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
-        "base_link", rviz_visual_tools::RVIZ_MARKER_TOPIC, move_group_interface_->getRobotModel());
+        shared_from_this(), "base_link", rviz_visual_tools::RVIZ_MARKER_TOPIC, move_group_interface_->getRobotModel());
     moveit_visual_tools_->deleteAllMarkers();
     moveit_visual_tools_->loadRemoteControl();
 
@@ -45,8 +46,8 @@ public:
 
 private:
   void handle_move_to_pose(
-      const std::shared_ptr<rizon_pick_and_place::srv::MoveToPose::Request> request,
-      std::shared_ptr<rizon_pick_and_place::srv::MoveToPose::Response> response)
+      const std::shared_ptr<robotic_depowdering_interfaces::srv::MoveToPose::Request> request,
+      std::shared_ptr<robotic_depowdering_interfaces::srv::MoveToPose::Response> response)
   {
     // Set the target pose
     move_group_interface_->setPoseTarget(request->target_pose);
@@ -55,9 +56,13 @@ private:
     draw_title_("Planning");
     moveit_visual_tools_->trigger();
 
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    bool success = (move_group_interface_->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    auto const [success, plan] = [&move_group_interface = move_group_interface_] {
+      moveit::planning_interface::MoveGroupInterface::Plan msg;
+      auto const ok = static_cast<bool>(move_group_interface->plan(msg));
+      return std::make_pair(ok, msg);
+    }();
 
+    
     if (success)
     {
       draw_trajectory_tool_path_(plan.trajectory_);
@@ -78,7 +83,7 @@ private:
     }
   }
 
-  rclcpp::Service<rizon_pick_and_place::srv::MoveToPose>::SharedPtr service_;
+  rclcpp::Service<robotic_depowdering_interfaces::srv::MoveToPose>::SharedPtr service_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
   std::shared_ptr<moveit_visual_tools::MoveItVisualTools> moveit_visual_tools_;
 
