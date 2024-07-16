@@ -124,6 +124,9 @@ cmake .. -DCMAKE_INSTALL_PREFIX=<where you cloned this repo>/install/flexiv_rdk
 make
 sudo make install
 ```
+> [!NOTE]
+> Soon, when version 1.0 of flexiv_ros2 is released, you won’t need to use the rdk for controlling the gripper as you will be able to do this through ROS. Keep an eye out for this.
+
 Then build everything else: <br>
 ```
 cd <where you cloned this repo>
