@@ -4,6 +4,8 @@
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "gpd_interface.hpp"
+#include "Eigen/Geometry"
+// #include "rizon_pick_and_place/srv/MoveToPose.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -18,12 +20,13 @@ using namespace std::chrono_literals;
 int main(int argc, char** argv) {
 
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("pick_up_object_client");
+
+    const auto logger = rclcpp::get_logger("rclcpp");
 
     // Assume all arguments are correctly formed.
     // Will have to change this.
     if (argc < 2) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj] [x-coord=0.0] [y-coord=0.0] [z-coord=0.0]");
+        RCLCPP_ERROR(logger, "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj] [x-coord=0.0] [y-coord=0.0] [z-coord=0.0]");
         return -1;
     }
 
@@ -45,18 +48,71 @@ int main(int argc, char** argv) {
 
     std::string test_object_filename = argv[1];
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Test object %s is placed at (%f, %f, %f)", test_object_filename.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
+    RCLCPP_INFO(logger, "Test object %s is placed at (%f, %f, %f)", test_object_filename.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
 
     auto grasp_config = generateGraspPose(test_object_filename);
 
     if (!grasp_config) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to generate a grasp pose. Check output for details.");
+        RCLCPP_ERROR(logger, "GPD failed to generate a grasp pose. Check output for details.");
         return -1;
     }
 
     
     // Offset grasp position to account for objects not placed at origin.
     grasp_config->setPosition(grasp_config->getPosition() + test_object_position);
+
+    RCLCPP_INFO(logger, "\tposition: <%f, %f, %f>", 
+        grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z());
+    RCLCPP_INFO(logger, "\tapproach: <%f, %f, %f>", 
+        grasp_config->getApproach().x(), grasp_config->getApproach().y(), grasp_config->getApproach().z());
+    RCLCPP_INFO(logger, "\tbinormal: <%f, %f, %f>", 
+        grasp_config->getBinormal().x(), grasp_config->getBinormal().y(), grasp_config->getBinormal().z());
+    RCLCPP_INFO(logger, "\taxis: <%f, %f, %f>", 
+        grasp_config->getAxis().x(), grasp_config->getAxis().y(), grasp_config->getAxis().z());
+    RCLCPP_INFO(logger, "\taperture: %f", 
+        grasp_config->getGraspWidth());
+    RCLCPP_INFO(logger, "\tscore: %f", 
+        grasp_config->getScore());
+    
+    auto request = std::make_shared<robotic_depowdering_interfaces::srv::GpdGrasp::Request>();
+    request->file_name = argv[1];
+
+    // Set the target pose for the robot to move to
+    auto target_pose = geometry_msgs::msg::Pose();
+    target_pose.position.x = grasp_config->getPosition().x();
+    target_pose.position.y = grasp_config->getPosition().y();
+    target_pose.position.z = grasp_config->getPosition().z();
+    Eigen::Quaternion<double> rot = Eigen::Quaternion<double>::FromTwoVectors(Eigen::Vector3d(0.0,0.0,1.0), grasp_config->getApproach());
+    target_pose.orientation.w = rot.w();
+    target_pose.orientation.x = rot.x();
+    target_pose.orientation.y = rot.y();
+    target_pose.orientation.z = rot.z();
+
+    RCLCPP_INFO(logger, "Got quaternion w:%f x:%f y:%f z:%f", rot.w(), rot.x(), rot.y(), rot.z());
+
+    // Create a service client to call the move_to_pose service
+    // auto client = node->create_client<rizon_pick_and_place::srv::MoveToPose>("move_to_pose");
+    // while (!client->wait_for_service(std::chrono::seconds(1))) {
+    //     if (!rclcpp::ok()) {
+    //         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+    //         return 0;
+    //     }
+    //     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
+    // }
+
+    // auto request = std::make_shared<rizon_pick_and_place::srv::MoveToPose::Request>();
+    // request->target_pose = target_pose;
+
+    // auto result = client->async_send_request(request);
+    // if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+    //     if (result.get()->success) {
+    //         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully moved to target pose.");
+    //     } else {
+    //         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to move to target pose.");
+    //     }
+    // } else {
+    //     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service move_to_pose");
+    // }
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tposition: <%f, %f, %f>", 
         grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z());
