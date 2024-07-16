@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
     target_pose.orientation.y = rot_q.y();
     target_pose.orientation.z = rot_q.z();
 
-    RCLCPP_INFO(logger, "Got quaternion w:%f x:%f y:%f z:%f", rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
-    RCLCPP_INFO(logger, "%f %f %f %f %f %f %f",
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got quaternion w:%f x:%f y:%f z:%f", rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%f %f %f %f %f %f %f",
         grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z(),
         rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
 
