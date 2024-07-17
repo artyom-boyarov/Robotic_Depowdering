@@ -36,7 +36,7 @@ std::unique_ptr<gpd::candidate::Hand> generateGraspPose(std::string filename)
     command << filename;
     command << " ";
     command << filename_pcd;
-    command << " -leaf_size 0.0025 -write_normals -no_vis_result"; // TODO: Add option for modifying more parameters?
+    command << " -leaf_size 0.001 -write_normals -no_vis_result"; // TODO: Add option for modifying more parameters?
 
     int res = std::system(command.str().c_str());
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Point cloud conversion command \"%s\" executed with result %d", command.str().c_str(), res);

@@ -60,6 +60,9 @@ ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_dep
 target_link_libraries(pick_up_object ${PCL_LIBRARIES} gpd)
 target_link_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
 target_include_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)
+target_link_libraries(pick_up_object flexiv_rdk.x86_64-linux-gnu)
+target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
+target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
 add_executable(moveit_collision_detection_demo src/moveit_collision_detection_demo.cpp)
 ament_target_dependencies(moveit_collision_detection_demo rclcpp moveit_core moveit_ros_planning)
