@@ -15,6 +15,7 @@
   <depend>moveit_visual_tools</depend>
   <depend>robotic_depowdering_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>pick_ik</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

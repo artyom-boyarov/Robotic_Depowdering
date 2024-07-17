@@ -113,13 +113,16 @@ def generate_launch_description():
         )
     )
 
-    # Start the move_to_pose_service node
-    move_to_pose_service = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            FindPackageShare('rizon_pick_and_place'),
-            '/launch/move_to_pose_service.launch.py'
-        ])
-    )
+    # # Start the move_to_pose_service node
+    # move_to_pose_service = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource([
+    #         FindPackageShare('rizon_pick_and_place'),
+    #         '/launch/rizon_pick_and_place.launch.py'
+    #     ]),
+    #     launch_arguments={
+    #         "robot_ip"
+    #     }
+    # )
     pick_up_object = Node(
         package='robotic_depowdering',
         executable='pick_up_object',
@@ -140,6 +143,6 @@ def generate_launch_description():
         publish_clear_rviz_cmd,
         delay_publish_object,
         delay_pick_up_object,
-        move_to_pose_service,
+        # move_to_pose_service,
     ]
     return LaunchDescription(declared_arguments + nodes)

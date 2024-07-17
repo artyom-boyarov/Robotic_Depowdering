@@ -354,6 +354,11 @@ def generate_launch_description():
         )
     )
 
+    move_to_pose_service_node = Node(
+        package="rizon_pick_and_place",
+        executable="move_to_pose_service"
+    )
+
     nodes = [
         move_group_node,
         robot_state_publisher_node,
@@ -363,6 +368,7 @@ def generate_launch_description():
         servo_node,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
+        move_to_pose_service_node,
     ]
 
     return LaunchDescription(declared_arguments + nodes)
