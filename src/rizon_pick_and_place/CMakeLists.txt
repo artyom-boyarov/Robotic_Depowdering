@@ -10,20 +10,27 @@ find_package(ament_cmake REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
+find_package(robotic_depowdering_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
-add_executable(rizon_pick_and_place src/rizon_pick_and_place.cpp)
-target_include_directories(rizon_pick_and_place PUBLIC
+
+add_executable(move_to_pose_service src/move_to_pose_service.cpp)
+target_include_directories(move_to_pose_service PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_compile_features(rizon_pick_and_place PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+  
+target_compile_features(move_to_pose_service PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-  rizon_pick_and_place
+  move_to_pose_service
   "moveit_ros_planning_interface"
   "rclcpp"
   "moveit_visual_tools"
+  "geometry_msgs"
+  "robotic_depowdering_interfaces"
 )
 
-install(TARGETS rizon_pick_and_place
+
+install(TARGETS move_to_pose_service
   DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}

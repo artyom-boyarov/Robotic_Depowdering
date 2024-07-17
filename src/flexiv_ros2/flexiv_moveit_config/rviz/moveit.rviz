@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /MotionPlanning1/Scene Robot1
       Splitter Ratio: 0.5
-    Tree Height: 193
+    Tree Height: 165
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -443,9 +443,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.10040300339460373
-        Y: 0.27989906072616577
-        Z: 0.3314317762851715
+        X: 0
+        Y: 0
+        Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -478,5 +478,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1600
-  X: -7
-  Y: -5
+  X: 70
+  Y: 27

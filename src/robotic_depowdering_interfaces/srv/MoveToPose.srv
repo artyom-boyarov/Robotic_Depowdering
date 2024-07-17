@@ -1,0 +1,4 @@
+# MoveToPose.srv.srv
+geometry_msgs/Pose target_pose
+---
+bool success

@@ -4,8 +4,9 @@
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "gpd_interface.hpp"
+#include "robotic_depowdering_interfaces/srv/move_to_pose.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 #include "Eigen/Geometry"
-// #include "rizon_pick_and_place/srv/MoveToPose.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -75,9 +76,6 @@ int main(int argc, char** argv) {
         grasp_config->getGraspWidth());
     RCLCPP_INFO(logger, "\tscore: %f", 
         grasp_config->getScore());
-    
-    auto request = std::make_shared<robotic_depowdering_interfaces::srv::GpdGrasp::Request>();
-    request->file_name = argv[1];
 
     // Set the target pose for the robot to move to
     auto target_pose = geometry_msgs::msg::Pose();
@@ -95,33 +93,86 @@ int main(int argc, char** argv) {
     target_pose.orientation.y = rot_q.y();
     target_pose.orientation.z = rot_q.z();
 
-    RCLCPP_INFO(logger, "Got quaternion w:%f x:%f y:%f z:%f", rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
-    RCLCPP_INFO(logger, "%f %f %f %f %f %f %f",
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got quaternion w:%f x:%f y:%f z:%f", rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%f %f %f %f %f %f %f",
         grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z(),
         rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+
     // Create a service client to call the move_to_pose service
-    // auto client = node->create_client<rizon_pick_and_place::srv::MoveToPose>("move_to_pose");
-    // while (!client->wait_for_service(std::chrono::seconds(1))) {
-    //     if (!rclcpp::ok()) {
-    //         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
-    //         return 0;
-    //     }
-    //     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
-    // }
+    auto client = node->create_client<robotic_depowdering_interfaces::srv::MoveToPose>("move_to_pose");
+    while (!client->wait_for_service(std::chrono::seconds(1))) {
+        if (!rclcpp::ok()) {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+            return 0;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
+    }
 
-    // auto request = std::make_shared<rizon_pick_and_place::srv::MoveToPose::Request>();
-    // request->target_pose = target_pose;
+    auto request = std::make_shared<robotic_depowdering_interfaces::srv::MoveToPose::Request>();
+    request->target_pose = target_pose;
 
-    // auto result = client->async_send_request(request);
-    // if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-    //     if (result.get()->success) {
-    //         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully moved to target pose.");
-    //     } else {
-    //         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to move to target pose.");
-    //     }
-    // } else {
-    //     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service move_to_pose");
-    // }
+    auto result = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully moved to target pose.");
+        } else {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to move to target pose.");
+        }
+    } else {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service move_to_pose");
+    }
+
+    /*
+    // Carry out IK 
+    //   \/\/\/\/
+    // This simply sets random positions.
+    std::vector<double> positions(7);
+    srand((unsigned int)time(NULL));
+    for (auto& pos : positions) {
+        pos = (float)rand() / RAND_MAX;
+    }
+    
+
+    // Now, after we've done IK, we publish the list of joint angles for the 7 joints to "/rizon_arm_controller/joint_trajectory".
+    const std::string rizon_interface_topic = "/rizon_arm_controller/joint_trajectory";
+    rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr jointTrajectoryPublisher = 
+        node->create_publisher<trajectory_msgs::msg::JointTrajectory>(rizon_interface_topic, 10);
+    
+    trajectory_msgs::msg::JointTrajectory jointTrajectoryMessage;
+    jointTrajectoryMessage.joint_names = std::vector<std::string>({
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"});
+    
+    trajectory_msgs::msg::JointTrajectoryPoint armPoint;
+    armPoint.positions = positions;
+    auto duration = builtin_interfaces::msg::Duration();
+    duration.sec = 1;
+    armPoint.time_from_start = duration;
+
+    jointTrajectoryMessage.points = {armPoint};
+
+    try {
+        jointTrajectoryPublisher->publish(jointTrajectoryMessage);
+        rclcpp::spin_some(node);
+    } catch (const rclcpp::exceptions::RCLError& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to send message to Rizon 4s. Details: %s", e.what());
+    }
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sent the arm to go to <%f, %f, %f, %f, %f, %f, %f>", 
+        positions[0], 
+        positions[1], 
+        positions[2], 
+        positions[3], 
+        positions[4], 
+        positions[5], 
+        positions[6]
+    );
+    */
 
     rclcpp::shutdown();
     return 0;
