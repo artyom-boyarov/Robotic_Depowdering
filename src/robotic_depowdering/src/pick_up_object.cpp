@@ -6,11 +6,13 @@
 #include "gpd_interface.hpp"
 #include "robotic_depowdering_interfaces/srv/move_to_pose.hpp"
 #include "geometry_msgs/msg/pose.hpp"
+#include "Eigen/Geometry"
 
 #include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <ctime>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -19,12 +21,15 @@ using namespace std::chrono_literals;
 int main(int argc, char** argv) {
 
     rclcpp::init(argc, argv);
+
+    const auto logger = rclcpp::get_logger("rclcpp");
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("pick_up_object_client");
+
 
     // Assume all arguments are correctly formed.
     // Will have to change this.
     if (argc < 2) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj] [x-coord=0.0] [y-coord=0.0] [z-coord=0.0]");
+        RCLCPP_ERROR(logger, "Usage: ros2 run robotic_depowdering pick_up_object [filename.obj] [x-coord=0.0] [y-coord=0.0] [z-coord=0.0]");
         return -1;
     }
 
@@ -46,12 +51,12 @@ int main(int argc, char** argv) {
 
     std::string test_object_filename = argv[1];
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Test object %s is placed at (%f, %f, %f)", test_object_filename.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
+    RCLCPP_INFO(logger, "Test object %s is placed at (%f, %f, %f)", test_object_filename.c_str(), obj_x_pos, obj_y_pos, obj_z_pos);
 
     auto grasp_config = generateGraspPose(test_object_filename);
 
     if (!grasp_config) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "GPD failed to generate a grasp pose. Check output for details.");
+        RCLCPP_ERROR(logger, "GPD failed to generate a grasp pose. Check output for details.");
         return -1;
     }
 
@@ -59,19 +64,18 @@ int main(int argc, char** argv) {
     // Offset grasp position to account for objects not placed at origin.
     grasp_config->setPosition(grasp_config->getPosition() + test_object_position);
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tposition: <%f, %f, %f>", 
+    RCLCPP_INFO(logger, "\tposition: <%f, %f, %f>", 
         grasp_config->getPosition().x(), grasp_config->getPosition().y(), grasp_config->getPosition().z());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tapproach: <%f, %f, %f>", 
+    RCLCPP_INFO(logger, "\tapproach: <%f, %f, %f>", 
         grasp_config->getApproach().x(), grasp_config->getApproach().y(), grasp_config->getApproach().z());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tbinormal: <%f, %f, %f>", 
+    RCLCPP_INFO(logger, "\tbinormal: <%f, %f, %f>", 
         grasp_config->getBinormal().x(), grasp_config->getBinormal().y(), grasp_config->getBinormal().z());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taxis: <%f, %f, %f>", 
+    RCLCPP_INFO(logger, "\taxis: <%f, %f, %f>", 
         grasp_config->getAxis().x(), grasp_config->getAxis().y(), grasp_config->getAxis().z());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\taperture: %f", 
+    RCLCPP_INFO(logger, "\taperture: %f", 
         grasp_config->getGraspWidth());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\tscore: %f", 
+    RCLCPP_INFO(logger, "\tscore: %f", 
         grasp_config->getScore());
-    
 
     // Set the target pose for the robot to move to
     auto target_pose = geometry_msgs::msg::Pose();
@@ -169,8 +173,6 @@ int main(int argc, char** argv) {
         positions[6]
     );
     */
-
-
 
     rclcpp::shutdown();
     return 0;
