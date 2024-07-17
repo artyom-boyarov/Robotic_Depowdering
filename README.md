@@ -157,7 +157,7 @@ ifconfig
 ```
 In one terminal run:<br>
 ```
-ros2 launch flexiv_bringup rizon_with_object_pickup.launch.py robot_ip:=192.167.2.100 local_ip:=[your IP]
+ros2 launch rizon_pick_and_place rizon_pick_and_place.launch.py robot_ip:=192.167.2.100 local_ip:=[your IP]
 ```
 In another terminal run:<br>
 ```
@@ -171,7 +171,7 @@ Replace Buckle.obj with the name of the part you want to use, and the positions 
 #### Without robot (just simulation)
 In one terminal run:<br>
 ```
-ros2 launch flexiv_bringup rizon_with_object_pickup.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
+ros2 launch rizon_pick_and_place rizon_pick_and_place.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
 ```
 In another terminal run:<br>
 ```
