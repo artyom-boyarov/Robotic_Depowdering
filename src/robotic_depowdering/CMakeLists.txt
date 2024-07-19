@@ -67,6 +67,12 @@ target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexi
 add_executable(moveit_collision_detection_demo src/moveit_collision_detection_demo.cpp)
 ament_target_dependencies(moveit_collision_detection_demo rclcpp moveit_core moveit_ros_planning)
 
+add_executable(loop_parts_collision_demo src/loop_parts_collision_demo.cpp)
+ament_target_dependencies(loop_parts_collision_demo rclcpp Eigen3 visualization_msgs)
+target_include_directories(loop_parts_collision_demo PRIVATE ~/miniforge3/include)
+target_link_directories(loop_parts_collision_demo PRIVATE ~/miniforge3/lib)
+target_link_libraries(loop_parts_collision_demo hpp-fcl)
+
 install( TARGETS
   server
   client
