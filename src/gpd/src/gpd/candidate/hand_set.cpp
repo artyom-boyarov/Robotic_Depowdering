@@ -252,12 +252,15 @@ void HandSet::modifyCandidate(Hand &hand, const util::PointList &point_list,
 
 void HandSet::labelHypothesis(const util::PointList &point_list,
                               const FingerHand &finger_hand, Hand &hand) const {
-  int label =
+  int nAntiPodalPts =
       antipodal_.evaluateGrasp(point_list, 0.003, finger_hand.getLateralAxis(),
                                finger_hand.getForwardAxis(), 2);
-  hand.setHalfAntipodal(label == Antipodal::HALF_GRASP ||
-                        label == Antipodal::FULL_GRASP);
-  hand.setFullAntipodal(label == Antipodal::FULL_GRASP);
+  // hand.setHalfAntipodal(label == Antipodal::HALF_GRASP ||
+  //                       label == Antipodal::FULL_GRASP);
+  // hand.setFullAntipodal(label == Antipodal::FULL_GRASP);
+  hand.setHalfAntipodal(nAntiPodalPts == Antipodal::HALF_GRASP);
+  hand.setFullAntipodal(nAntiPodalPts != Antipodal::HALF_GRASP && nAntiPodalPts != Antipodal::NO_GRASP);
+  hand.setNumAntiPodalPts(nAntiPodalPts);
 }
 
 inline int HandSet::fastrand() const {

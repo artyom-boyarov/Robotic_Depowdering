@@ -71,6 +71,7 @@ void Hand::print() const {
   std::cout << "score: " << getScore() << std::endl;
   std::cout << "full-antipodal: " << isFullAntipodal() << std::endl;
   std::cout << "half-antipodal: " << isHalfAntipodal() << std::endl;
+  std::cout << "num-antipodal-pts: " << getNumAntiPodalPts() << std::endl;
   std::cout << "closing box:\n";
   std::cout << " bottom: " << getBottom() << std::endl;
   std::cout << " top: " << getTop() << std::endl;

@@ -742,11 +742,13 @@ void Plot::addCloudNormalsToViewer(PCLVisualizer &viewer,
 }
 
 void Plot::runViewer(PCLVisualizer &viewer) {
-  while (!viewer->wasStopped()) {
-    viewer->spinOnce(100);
-    std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(1));
-  }
+  // while (!viewer->wasStopped()) {
+  //   viewer->spinOnce(100);
+  //   std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(1));
+  // }
 
+  // viewer->close();
+  viewer->spin();
   viewer->close();
 }
 

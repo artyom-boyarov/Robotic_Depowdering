@@ -152,6 +152,8 @@ class Hand {
    */
   bool isFullAntipodal() const { return label_.full_antipodal_; }
 
+  int getNumAntiPodalPts() const { return nAntiPodalPts; }
+
   /**
    * \brief Return the position of the grasp.
    * \return the grasp position
@@ -187,6 +189,8 @@ class Hand {
    * \param b whether the grasp is indeterminate
    */
   void setHalfAntipodal(bool b) { label_.half_antipodal_ = b; }
+
+  void setNumAntiPodalPts(int nPts) { nAntiPodalPts = nPts; }
 
   /**
    * \brief Set the width of the object contained in the grasp.
@@ -274,6 +278,8 @@ class Hand {
   int finger_placement_index_;  ///< index of the finger placement that resulted
                                 /// in this grasp
   BoundingBox closing_box_;     ///< defines region surrounded by fingers
+
+  int nAntiPodalPts = 0;
 };
 
 }  // namespace candidate

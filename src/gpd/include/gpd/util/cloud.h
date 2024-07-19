@@ -64,6 +64,7 @@ namespace util {
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloudXYZ;
 typedef pcl::PointCloud<pcl::PointXYZRGBA> PointCloudRGB;
 typedef pcl::PointCloud<pcl::PointNormal> PointCloudPointNormal;
+typedef pcl::PointCloud<pcl::PointNormal> PointCloudPointNormal;
 typedef pcl::PointCloud<pcl::Normal> PointCloudNormal;
 
 /**
@@ -372,11 +373,14 @@ class Cloud {
    */
   PointCloudRGB::Ptr loadPointCloudFromFile(const std::string &filename) const;
 
+  void loadNormalsPointCloud(const std::string &filename);
+
  private:
   std::vector<std::vector<int>> convertCameraSourceMatrixToLists();
 
   PointCloudRGB::Ptr cloud_processed_;
   PointCloudRGB::Ptr cloud_original_;
+  PointCloudPointNormal::Ptr cloud_with_normals;
 
   // binary matrix: (i,j) = 1 if point j is seen by camera i, 0 otherwise
   Eigen::MatrixXi camera_source_;

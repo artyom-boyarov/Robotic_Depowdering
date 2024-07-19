@@ -661,5 +661,27 @@ PointCloudRGB::Ptr Cloud::loadPointCloudFromFile(
 
 void Cloud::setSamples(const Eigen::Matrix3Xd &samples) { samples_ = samples; }
 
+
+void Cloud::loadNormalsPointCloud(const std::string &filename) {
+  PointCloudPointNormal::Ptr cloud(new PointCloudPointNormal);
+  normals_.resize(3, 0);
+  if (pcl::io::loadPCDFile<pcl::PointNormal>(filename, *cloud) == -1) {
+    printf("Couldn't read PCD file: %s\n", filename.c_str());
+    cloud->points.resize(0);
+  }
+  auto data_ptr = cloud->data();
+
+  normals_.resize(3, cloud->size());
+  for (int i = 0; i < cloud->size(); i++) {
+    normals_(0, i) = data_ptr[i].normal[0];
+    normals_(1, i) = data_ptr[i].normal[1];
+    normals_(2, i) = data_ptr[i].normal[2];
+  }
+
+  pcl::copyPointCloud(*cloud, *cloud_original_);
+  *cloud_processed_ = *cloud_original_;
+}
+
 }  // namespace util
 }  // namespace gpd
+

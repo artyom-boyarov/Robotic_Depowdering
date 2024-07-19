@@ -75,7 +75,7 @@ void ConfigFile::parseLine(const std::string &line, size_t const lineNo) {
 
 bool ConfigFile::ExtractKeys() {
   std::ifstream file;
-  file.open(fName.c_str());
+  file.open(fName);
   if (!file) {
     std::cout << "Config file " + fName + " could not be found!\n";
     return false;

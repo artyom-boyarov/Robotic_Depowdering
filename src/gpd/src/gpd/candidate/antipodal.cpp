@@ -46,6 +46,9 @@ int Antipodal::evaluateGrasp(const util::PointList &point_list,
   if (left_idx_viable.size() > 0 || right_idx_viable.size() > 0)
     result = HALF_GRASP;
 
+  int num_viable_left = 0;
+  int num_viable_right = 0;
+
   if (left_idx_viable.size() > 0 && right_idx_viable.size() > 0) {
     Eigen::Matrix3Xd left_pts_viable(3, left_idx_viable.size()),
         right_pts_viable(3, right_idx_viable.size());
@@ -70,7 +73,6 @@ int Antipodal::evaluateGrasp(const util::PointList &point_list,
         std::max(left_pts_viable.row(vertical_axis).minCoeff(),
                  right_pts_viable.row(vertical_axis).minCoeff());
 
-    int num_viable_left = 0;
     for (int i = 0; i < left_pts_viable.cols(); i++) {
       double y = left_pts_viable(forward_axis, i);
       double z = left_pts_viable(vertical_axis, i);
@@ -78,7 +80,6 @@ int Antipodal::evaluateGrasp(const util::PointList &point_list,
           z <= top_viable_z)
         num_viable_left++;
     }
-    int num_viable_right = 0;
     for (int i = 0; i < right_pts_viable.cols(); i++) {
       double y = right_pts_viable(forward_axis, i);
       double z = right_pts_viable(vertical_axis, i);
@@ -92,7 +93,7 @@ int Antipodal::evaluateGrasp(const util::PointList &point_list,
     }
   }
 
-  return result;
+  return (result == FULL_GRASP) ? num_viable_left + num_viable_right : result;
 }
 
 int Antipodal::evaluateGrasp(const Eigen::Matrix3Xd &normals,

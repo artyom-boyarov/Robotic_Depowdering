@@ -23,6 +23,7 @@ void CandidatesGenerator::preprocessPointCloud(util::Cloud &cloud) {
     cloud.voxelizeCloud(params_.voxel_size_);
   }
 
+  // NOTE: Commented out for own normals.
   cloud.calculateNormals(params_.num_threads_, params_.normals_radius_);
 
   if (params_.refine_normals_k_ > 0) {
