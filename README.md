@@ -116,6 +116,7 @@ First, build gpd:<br>
 colcon build --symlink-install --packages-select gpd
 ```
 Then build the flexiv rdk:
+## TODO: Update this once the Flexiv RDK build is fixed, plus create patch for dodgy Fast-DDS package
 ```
 cd src/flexiv_ros2/flexiv_hardware/rdk
 mkdir build
@@ -124,6 +125,19 @@ cmake .. -DCMAKE_INSTALL_PREFIX=<where you cloned this repo>/install/flexiv_rdk
 make
 sudo make install
 ```
+Lastly, build hpp-fcl (for collision detection)
+```
+cd ~
+wget https://github.com/humanoid-path-planner/hpp-fcl/releases/download/v2.4.5/hpp-fcl-2.4.5.tar.gz
+tar -xvf hpp-fcl-2.4.5.tar.gz
+cd hpp-fcl-2.4.5
+mkdir build
+cd build
+cmake .. -DBUILD_PYTHON_INTERFACE=OFF
+make -j4
+sudo make install
+```
+## TODO: Update hpp-fcl dependency in CMakeLists.txt
 > [!NOTE]
 > Soon, when version 1.0 of flexiv_ros2 is released, you won’t need to use the rdk for controlling the gripper as you will be able to do this through ROS. Keep an eye out for this.
 
