@@ -1,15 +1,14 @@
 /**
  * @example basics6_gripper_control.cpp
- * This tutorial does position and force control (if available) for grippers supported by Flexiv.
- * @copyright Copyright (C) 2016-2021 Flexiv Ltd. All Rights Reserved.
+ * This tutorial does position and force (if available) control of grippers supported by Flexiv.
+ * @copyright Copyright (C) 2016-2024 Flexiv Ltd. All Rights Reserved.
  * @author Flexiv
  */
 
-#include <flexiv/Robot.hpp>
-#include <flexiv/Exception.hpp>
-#include <flexiv/Log.hpp>
-#include <flexiv/Gripper.hpp>
-#include <flexiv/Utility.hpp>
+#include <flexiv/rdk/robot.hpp>
+#include <flexiv/rdk/gripper.hpp>
+#include <flexiv/rdk/utility.hpp>
+#include <spdlog/spdlog.h>
 
 #include <iostream>
 #include <string>
@@ -18,44 +17,29 @@
 
 namespace {
 /** Global flag: whether the gripper control tasks are finished */
-std::atomic<bool> g_isDone = {false};
-}
-
-/** @brief Print tutorial description */
-void printDescription()
-{
-    std::cout << "This tutorial does position and force control (if available) for grippers "
-                 "supported by Flexiv."
-              << std::endl
-              << std::endl;
+std::atomic<bool> g_finished = {false};
 }
 
 /** @brief Print program usage help */
-void printHelp()
+void PrintHelp()
 {
     // clang-format off
-    std::cout << "Required arguments: [robot IP] [local IP]" << std::endl;
-    std::cout << "    robot IP: address of the robot server" << std::endl;
-    std::cout << "    local IP: address of this PC" << std::endl;
+    std::cout << "Required arguments: [robot SN]" << std::endl;
+    std::cout << "    robot SN: Serial number of the robot to connect to. "
+                 "Remove any space, for example: Rizon4s-123456" << std::endl;
     std::cout << "Optional arguments: None" << std::endl;
     std::cout << std::endl;
     // clang-format on
 }
 
 /** @brief Print gripper states data @ 1Hz */
-void printGripperStates(flexiv::Gripper& gripper, flexiv::Log& log)
+void PrintGripperStates(flexiv::rdk::Gripper& gripper)
 {
-    // Data struct storing gripper states
-    flexiv::GripperStates gripperStates;
-
-    while (!g_isDone) {
-        // Get the latest gripper states
-        gripper.getGripperStates(gripperStates);
-
-        // Print all gripper states in JSON format using the built-in ostream
-        // operator overloading
-        log.info("Current gripper states:");
-        std::cout << gripperStates << std::endl;
+    while (!g_finished) {
+        // Print all gripper states in JSON format using the built-in ostream operator overloading
+        spdlog::info("Current gripper states:");
+        std::cout << gripper.states() << std::endl;
+        std::cout << "moving: " << gripper.moving() << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
@@ -64,132 +48,106 @@ int main(int argc, char* argv[])
 {
     // Program Setup
     // =============================================================================================
-    // Logger for printing message with timestamp and coloring
-    flexiv::Log log;
-
     // Parse parameters
-    if (argc < 3 || flexiv::utility::programArgsExistAny(argc, argv, {"-h", "--help"})) {
-        printHelp();
+    if (argc < 2 || flexiv::rdk::utility::ProgramArgsExistAny(argc, argv, {"-h", "--help"})) {
+        PrintHelp();
         return 1;
     }
-    // IP of the robot server
-    std::string robotIP = argv[1];
-    // IP of the workstation PC running this program
-    std::string localIP = argv[2];
+    // Serial number of the robot to connect to. Remove any space, for example: Rizon4s-123456
+    std::string robot_sn = argv[1];
 
     // Print description
-    log.info("Tutorial description:");
-    printDescription();
+    spdlog::info(
+        ">>> Tutorial description <<<\nThis tutorial does position and force (if available) "
+        "control of grippers supported by Flexiv.");
 
     try {
         // RDK Initialization
         // =========================================================================================
         // Instantiate robot interface
-        flexiv::Robot robot(robotIP, localIP);
+        flexiv::rdk::Robot robot(robot_sn);
 
-        // Clear fault on robot server if any
-        if (robot.isFault()) {
-            log.warn("Fault occurred on robot server, trying to clear ...");
+        // Clear fault on the connected robot if any
+        if (robot.fault()) {
+            spdlog::warn("Fault occurred on the connected robot, trying to clear ...");
             // Try to clear the fault
-            robot.clearFault();
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-            // Check again
-            if (robot.isFault()) {
-                log.error("Fault cannot be cleared, exiting ...");
+            if (!robot.ClearFault()) {
+                spdlog::error("Fault cannot be cleared, exiting ...");
                 return 1;
             }
-            log.info("Fault on robot server is cleared");
+            spdlog::info("Fault on the connected robot is cleared");
         }
 
-        // Enable the robot, make sure the E-stop is released before enabling
-        log.info("Enabling robot ...");
-        robot.enable();
+        // Enable the robot, make sure the E-Stop is released before enabling
+        spdlog::info("Enabling robot ...");
+        robot.Enable();
 
         // Wait for the robot to become operational
-        while (!robot.isOperational()) {
+        while (!robot.operational()) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        log.info("Robot is now operational");
+        spdlog::info("Robot is now operational");
 
         // Gripper Control
         // =========================================================================================
         // Gripper control is not available if the robot is in IDLE mode, so switch to some mode
         // other than IDLE
-        robot.setMode(flexiv::Mode::NRT_PLAN_EXECUTION);
-        robot.executePlan("PLAN-Home");
+        robot.SwitchMode(flexiv::rdk::Mode::NRT_PLAN_EXECUTION);
+        robot.ExecutePlan("PLAN-Home");
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         // Instantiate gripper control interface
-        flexiv::Gripper gripper(robot);
+        flexiv::rdk::Gripper gripper(robot);
+
+        // Manually initialize the gripper, not all grippers need this step
+        spdlog::info("Initializing gripper, this process takes about 10 seconds ...");
+        gripper.Init();
+        spdlog::info("Initialization complete");
 
         // Thread for printing gripper states
-        std::thread printThread(printGripperStates, std::ref(gripper), std::ref(log));
+        std::thread print_thread(PrintGripperStates, std::ref(gripper));
 
         // Position control
-        // log.info("Closing gripper");
-        // gripper.move(0.01, 0.1, 20);
-        // std::this_thread::sleep_for(std::chrono::seconds(2));
-        log.info("Opening gripper");
-        // Make sure to sleep for sufficient time after running this operation. 
-        gripper.move(0.09, 0.1, 20);
+        spdlog::info("Closing gripper");
+        gripper.Move(0.01, 0.1, 20);
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        
-        log.info("Closing gripper");
-        // This won't execute since the next function will immediately be called.
-        // Make sure you sleep the thread for enough time before stopping,
-        gripper.move(0.01, 0.1, 20);
-        log.info("Opening gripper without waiting");
-        gripper.move(0.09, 0.1, 20);
-        
-        // Stop
-        log.info("Closing gripper");
-        gripper.move(0.01, 0.1, 20);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        log.info("Stopping gripper");
-        gripper.stop();
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        log.info("Closing gripper");
-        gripper.move(0.01, 0.1, 20);
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        log.info("Opening gripper");
-        gripper.move(0.09, 0.1, 20);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        log.info("Stopping gripper");
-        gripper.stop();
+        spdlog::info("Opening gripper");
+        gripper.Move(0.09, 0.1, 20);
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
-        // Grasp the part
-        log.info("Opening gripper for part");
-        gripper.move(0.1, 0.1);
-        // You need to wait until the gripper opens.
+        // Stop
+        spdlog::info("Closing gripper");
+        gripper.Move(0.01, 0.1, 20);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        spdlog::info("Stopping gripper");
+        gripper.Stop();
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        log.info("Hold the part beneath the gripper");
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        log.info("Closing gripper for part");
-        // gripper.move(0.01, 0.1);
-        // For more on the gripper: https://rdk.flexiv.com/api/classflexiv_1_1_gripper.html 
-        gripper.grasp(5); // Try grasp with 5N. // Blocking operation. Grasps until it can grasp.
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        spdlog::info("Closing gripper");
+        gripper.Move(0.01, 0.1, 20);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        spdlog::info("Opening gripper");
+        gripper.Move(0.09, 0.1, 20);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        spdlog::info("Stopping gripper");
+        gripper.Stop();
+        std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // Force control, if available (sensed force is not zero)
-        flexiv::GripperStates gripperStates;
-        gripper.getGripperStates(gripperStates);
-        if (fabs(gripperStates.force) > std::numeric_limits<double>::epsilon()) {
-            log.info("Gripper running zero force control");
-            // gripper.grasp(0); // TODO: Uncomment
+        if (fabs(gripper.states().force) > std::numeric_limits<double>::epsilon()) {
+            spdlog::info("Gripper running zero force control");
+            gripper.Grasp(0);
             // Exit after 10 seconds
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
 
         // Finished, exit all threads
-        gripper.stop();
-        // Now the gripper will continue grasping the object until released.
-        g_isDone = true;
-        log.info("Program finished");
-        printThread.join();
+        gripper.Stop();
+        g_finished = true;
+        spdlog::info("Program finished");
+        print_thread.join();
 
-    } catch (const flexiv::Exception& e) {
-        log.error(e.what());
+    } catch (const std::exception& e) {
+        spdlog::error(e.what());
         return 1;
     }
 

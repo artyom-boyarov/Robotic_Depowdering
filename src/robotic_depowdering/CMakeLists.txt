@@ -47,12 +47,13 @@ ament_target_dependencies(server rclcpp example_interfaces)
 add_executable(client src/add_two_ints_client.cpp)
 ament_target_dependencies(client rclcpp example_interfaces)
 
-add_executable(gripper_test src/gripper_test.cpp)
-ament_target_dependencies(gripper_test rclcpp)
-# Since the Flexiv RDK isn't available as an ament package, we include it like this:
-target_link_libraries(gripper_test flexiv_rdk.x86_64-linux-gnu)
-target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
-target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
+# add_executable(gripper_test src/gripper_test.cpp)
+# ament_target_dependencies(gripper_test rclcpp)
+# # Since the Flexiv RDK isn't available as an ament package, we include it like this:
+# # NOTE: Disable the gripper test since there are some issues with the new RDK version.
+# target_link_libraries(gripper_test flexiv_rdk.x86_64-linux-gnu)
+# target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
+# target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
 add_executable(pick_up_object src/pick_up_object.cpp src/gpd_interface.cpp)
 ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
@@ -77,7 +78,7 @@ install( TARGETS
   server
   client
   pick_up_object
-  gripper_test
+  # gripper_test
   moveit_collision_detection_demo
   DESTINATION lib/${PROJECT_NAME}
 )

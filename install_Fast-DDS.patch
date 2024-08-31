@@ -1,0 +1,18 @@
+--- src/flexiv_ros2/flexiv_hardware/rdk/thirdparty/scripts/install_Fast-DDS.orig.sh	2024-08-27 16:47:01.180220897 -0400
++++ src/flexiv_ros2/flexiv_hardware/rdk/thirdparty/scripts/install_Fast-DDS.sh	2024-08-27 16:44:42.660248104 -0400
+@@ -23,7 +23,7 @@
+ # Configure CMake
+ mkdir -p build && cd build
+ cmake .. -DCMAKE_BUILD_TYPE=Release \
+-         -DBUILD_SHARED_LIBS=OFF \
++         -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR \
+          -DTHIRDPARTY_Asio=ON \
+@@ -34,4 +34,4 @@
+ # Build and install
+ cmake --build . --target install --config Release -j $NUM_JOBS
+ 
+-echo "Installed Fast-DDS"
+\ No newline at end of file
++echo "Installed Fast-DDS"

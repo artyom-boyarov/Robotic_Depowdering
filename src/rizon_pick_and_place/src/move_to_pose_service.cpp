@@ -24,8 +24,8 @@ void handle_move_to_pose(
     move_group_interface_->setPoseTarget(request->target_pose);
 
     // Planning
-    // draw_title_("Planning");
-    // moveit_visual_tools_->trigger();
+    draw_title_("Planning");
+    moveit_visual_tools_->trigger();
 
     auto const [success, plan] = [&move_group_interface = move_group_interface_] {
       moveit::planning_interface::MoveGroupInterface::Plan msg;
@@ -37,11 +37,11 @@ void handle_move_to_pose(
     if (success)
     {
       RCLCPP_INFO(node->get_logger(), "Planning succeeded, executing trajectory");
-      // draw_trajectory_tool_path_(plan.trajectory_);
-      // moveit_visual_tools_->trigger();
-      // prompt_("Press 'Next' in the RvizVisualToolsGui window to execute");
-      // draw_title_("Executing");
-      // moveit_visual_tools_->trigger();
+      draw_trajectory_tool_path_(plan.trajectory_);
+      moveit_visual_tools_->trigger();
+      prompt_("Press 'Next' in the RvizVisualToolsGui window to execute");
+      draw_title_("Executing");
+      moveit_visual_tools_->trigger();
 
       auto const ok = static_cast<bool>(move_group_interface_->execute(plan));
       if (!ok) {
@@ -52,8 +52,8 @@ void handle_move_to_pose(
     }
     else
     {
-      // draw_title_("Planning Failed!");
-      // moveit_visual_tools_->trigger();
+      draw_title_("Planning Failed!");
+      moveit_visual_tools_->trigger();
       response->success = false;
       RCLCPP_ERROR(node->get_logger(), "Planning and execution failed.");
     }

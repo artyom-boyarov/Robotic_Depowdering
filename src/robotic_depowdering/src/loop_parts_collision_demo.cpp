@@ -75,6 +75,7 @@ std::vector<loop_part> create_parts_loop() {
         {"bucky60", hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
         {"Buckle",  hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
         {"bucky60", hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
+        
         // {"ClampBar85", hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
         // {"dragon", hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
         // {"Dremel_Impeller",  hpp::fcl::Transform3f(hpp::fcl::Vec3f(randr(),randr(),randr()))},
