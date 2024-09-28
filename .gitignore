@@ -34,3 +34,5 @@ COLCON_IGNORE
 AMENT_IGNORE
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2
+
+src/robotic_depowdering/test_parts_vcpd_urdf/

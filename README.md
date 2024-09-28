@@ -112,6 +112,7 @@ ros-humble-robot-state-publisher \
 ros-humble-rviz2
 ```
 First, build gpd:<br>
+## TODO: Get rid of this, GPD is nonsense!
 ```
 colcon build --symlink-install --packages-select gpd
 ```

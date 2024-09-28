@@ -24,7 +24,10 @@ void CandidatesGenerator::preprocessPointCloud(util::Cloud &cloud) {
   }
 
   // NOTE: Commented out for own normals.
-  cloud.calculateNormals(params_.num_threads_, params_.normals_radius_);
+  // SEE THIS
+  // TODO: Do we need to have this commented/uncommented for the code that 
+  // specifies camera locations?
+  // cloud.calculateNormals(params_.num_threads_, params_.normals_radius_);
 
   if (params_.refine_normals_k_ > 0) {
     cloud.refineNormals(params_.refine_normals_k_);
