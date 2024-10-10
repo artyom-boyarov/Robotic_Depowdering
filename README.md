@@ -152,7 +152,20 @@ In any terminal where you run code, do: <br>
 source /opt/ros/humble/setup.sh
 source install/setup.sh
 ```
+
 ## Running
+### VCPD grasping
+#### Pre-process objects
+> [!IMPORTANT]
+> Ensure the parts are at their location in the loop in their CAD file, i.e. if a part is at (1,1,1) then center the part at (1,1,1) in the OBJ.
+
+Run:
+```
+ros2 run vcpd mesh_processing --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd/ -p width:=0.1 -p output_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf
+ros2 run vcpd grasp_analysis --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf -p config:=/home/artyom/Robotic_Depowdering/src/vcpd/config/config.json -p output_path:=/home/artyom/Robotic_Depowdering/src/vcpd/test_parts_grasps_out -p gui:=false -p verbose:=false
+```
+To visualize the grasp generation set gui to true.
+
 ### Pick up object + visualization
 #### With real robot
 > [!IMPORTANT]
