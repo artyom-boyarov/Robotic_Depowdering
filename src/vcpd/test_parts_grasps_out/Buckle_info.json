@@ -1,5 +1,5 @@
 {
-    "num_pairs": 708,
+    "num_pairs": 196,
     "keys": [
         "vertex_ids",
         "x_directions",
@@ -7,6 +7,8 @@
         "z_directions",
         "centers",
         "widths",
-        "quaternions"
+        "quaternions",
+        "min_sing_val_G",
+        "vol_ellipsoid_in_wrench"
     ]
 }

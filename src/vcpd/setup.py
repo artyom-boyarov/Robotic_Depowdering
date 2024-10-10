@@ -10,6 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/cfg/', ['cfg/config.json']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,8 +21,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'mesh_processing = vcpd.data_collection.mesh_processing:main',
-            'grasp_analysis = vcpd.data_collection.grasp_analysis:main'
+            'mesh_processing = vcpd.grasping.mesh_processing:main',
+            'grasp_analysis = vcpd.grasping.grasp_analysis:main'
         ],
     },
 )

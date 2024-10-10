@@ -36,3 +36,5 @@ AMENT_IGNORE
 # End of https://www.toptal.com/developers/gitignore/api/ros2
 
 src/robotic_depowdering/test_parts_vcpd_urdf/
+tmp/
+src/vcpd/test_parts_grasps_out/
