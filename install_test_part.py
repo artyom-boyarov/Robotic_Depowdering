@@ -11,6 +11,7 @@ This script assumes test parts are stored in the 'src/robotic_depowdering/test_p
 from obj2stl import obj2stl
 import argparse
 import subprocess
+import shutil
 
 TEST_PART_DIR = "src/robotic_depowdering/test_parts/"
 
@@ -22,6 +23,7 @@ parts = args.part_names
 for part in parts:
     # Convert from obj to stl
     stl_file_name = TEST_PART_DIR + part[:-4] + ".stl"
+    shutil.move(part, TEST_PART_DIR+part)
     obj2stl.convert(input=TEST_PART_DIR+part, output=stl_file_name)
 
     # Create stl binary

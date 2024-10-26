@@ -46,7 +46,25 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     with open(os.path.join(vcpd_package_share_dir, 'cfg', 'config.json'), 'r') as config_file:
         cfg = json.load(config_file)
     
-    rg = Rizon4sGripper('/home/artyom/Robotic_Depowdering/src/vcpd/assets')
+    floor_obj_path = os.path.join(vcpd_package_share_dir, 'assets', 'Floor.obj')
+    floor_id = p.createMultiBody(
+        baseCollisionShapeIndex=p.createCollisionShape(
+            shapeType=p.GEOM_MESH, 
+            fileName=floor_obj_path,
+            meshScale=[1]*3
+        ),
+        baseVisualShapeIndex=p.createVisualShape(shapeType=p.GEOM_MESH, 
+            fileName=floor_obj_path,
+            meshScale=[1]*3
+        ),
+        baseMass = 0,
+        basePosition = [0,0,0],
+        baseOrientation = [0,0,0,1]
+    )
+    
+    # TODO: When we get the updated flexiv library, get this to point to the
+    # meshes in robotic_depowdering
+    rg = Rizon4sGripper(os.path.join(vcpd_package_share_dir, 'assets'))
     
     rclpy.node.get_logger(LOGGER_NAME).info("Calculating grasps for: %s " % (obj_name))
 
@@ -56,6 +74,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     col_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     body_params = {'baseMass': 0, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
     obj = RigidObject(obj_name, vis_params=vis_params, col_params=col_params, body_params=body_params)
+
 
     obj_center_of_mass = np.array(mesh.center_mass)
     rclpy.node.get_logger(LOGGER_NAME).info('%s has center of mass at <%f, %f, %f>' %
@@ -255,6 +274,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         grasp_info['z_directions'][closest_to_com_grasp], 
         grasp_info['quaternions'][closest_to_com_grasp]
     )
+    # x = input()
 
     return grasp
 

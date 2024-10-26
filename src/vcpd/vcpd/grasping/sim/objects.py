@@ -77,76 +77,6 @@ class RigidObject(object):
         pose[0:3, 3] = pos
         return pose
 
-# TODO: Make a new class supporting the Rizon 4s gripper
-class PandaGripper(object):
-    def __init__(self, asset_path):
-        self.components = ['hand', 'left_finger', 'right_finger']
-        self.vertex_sets = dict()
-        for component in self.components:
-            vis_path = os.path.join(asset_path, component+'.obj')
-            col_path = os.path.join(asset_path, component+'_col.obj')
-            vis_params = {'shapeType': p.GEOM_MESH, 'fileName': vis_path, 'meshScale': [1] * 3}
-            col_params = {'shapeType': p.GEOM_MESH, 'fileName': col_path, 'meshScale': [1] * 3}
-            body_params = {'baseMass': 0, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
-            self.__setattr__(component, RigidObject(component,
-                                                    vis_params=vis_params,
-                                                    col_params=col_params,
-                                                    body_params=body_params))
-        self._max_width = 0.08
-        self._curr_width = 0.08
-
-    def set_pose(self, position, quaternion):
-        for com in self.components:
-            self.__getattribute__(com).set_pose(position, quaternion)
-        curr_width = self._curr_width
-        self._curr_width = self._max_width
-        self.set_gripper_width(curr_width)
-
-    def get_pose(self):
-        return self.__getattribute__(self.components[0]).get_pose()
-
-    def set_gripper_width(self, width):
-        # if width > self._max_width:
-        #     print('warning! the maximal width is 0.08 for panda gripper, set to 0.08 instead')
-        #     width = self._max_width
-        width = min(0.08, max(0.0, width))
-        left_delta = np.eye(4)
-        left_delta[1, 3] = (width - self._curr_width) / 2
-        left_pose = self.left_finger.transform @ left_delta
-        self.left_finger.set_pose(left_pose[0:3, 3], Rotation.from_matrix(left_pose[0:3, 0:3]).as_quat())
-        right_delta = np.eye(4)
-        right_delta[1, 3] = -(width - self._curr_width) / 2
-        right_pose = self.right_finger.transform @ right_delta
-        self.right_finger.set_pose(right_pose[0:3, 3], Rotation.from_matrix(right_pose[0:3, 0:3]).as_quat())
-        self._curr_width = width
-
-    def get_gripper_width(self):
-        return self._curr_width
-
-    def reset_gripper(self):
-        self.set_pose([0, 0, 0], [0, 0, 0, 1])
-        self.set_gripper_width(self._max_width)
-
-    def is_collided(self, exemption, threshold=0.0, show_col=False):
-        gripper_ids = [self.__getattribute__(com).obj_id for com in self.components]
-        for obj_id in range(p.getNumBodies()):
-            if obj_id not in gripper_ids and obj_id not in exemption:
-                for gripper_id in gripper_ids:
-                    contacts = p.getClosestPoints(gripper_id, obj_id, threshold)
-                    if len(contacts) != 0:
-                        p.changeVisualShape(obj_id, -1, rgbaColor=[1, 0, 0, 1]) if show_col else None
-                        return True
-        return False
-
-    def change_color(self, rgb=None, a=1.0):
-        if rgb is None:
-            rgba = np.random.uniform(size=3).tolist()+[a]
-        else:
-            rgba = np.asarray(rgb).tolist()+[a]
-        [p.changeVisualShape(self.__getattribute__(com).obj_id, -1, rgbaColor=rgba) for com in self.components]
-
-    def remove_gripper(self):
-        [p.removeBody(self.__getattribute__(com).obj_id) for com in self.components]
 
 BASE_OFFSET = np.array([0,0,0])
 BASE_ROTATION = Rotation.from_euler('xyz', [0, 0, 1.5707963267948966], degrees=False)
@@ -372,7 +302,9 @@ class Rizon4sGripper(object):
         # width += 0.019 # 0.0095 * 2
         # TODO: Left finger might be up or down depending on z_dir.
         # Cross z and y to get x.
-        if width > self._max_width: return False, None, None, None, None
+        grasp = GraspGeometry()
+        grasp.found = False
+        if width > self._max_width: return grasp
         try:
             y_dir = (1/np.linalg.norm(y_dir)) * y_dir
             z_dir = (1/np.linalg.norm(z_dir)) * z_dir
@@ -395,11 +327,12 @@ class Rizon4sGripper(object):
             finger_mount_left_rot = Rotation.from_euler("zyx", [90, 0, -90], degrees=True)
             finger_mount_right_rot = Rotation.from_euler("zyx", [-90, 0, 90], degrees=True)
 
-            if np.abs((0.0125 - width) / OUTER_BAR_LENGTH) > 1: return False, None, None, None, None
+            if np.abs((0.01 - width) / OUTER_BAR_LENGTH) > 1: return grasp
+
             # TODO: Check this. Doesn't seem like we even use theta.
-            finger_outer_bar_left_theta = np.arcsin((0.0125 - width) / OUTER_BAR_LENGTH)
+            finger_outer_bar_left_theta = np.arcsin((0.01 - (width/ 2)) / OUTER_BAR_LENGTH)
             finger_outer_bar_right_theta = -finger_outer_bar_left_theta
-            finger_outer_bar_y_displacement = 0.0125 - width
+            finger_outer_bar_y_displacement = 0.01 - (width/2)
             finger_outer_bar_z_displacement = np.sqrt((0.058**2) - finger_outer_bar_y_displacement**2)
 
             finger_outer_bar_left_base_pt = finger_mount_left_base_pt - (finger_outer_bar_z_displacement * z_dir) + (finger_outer_bar_y_displacement * y_dir)
@@ -421,15 +354,42 @@ class Rizon4sGripper(object):
             # print("Grasp point center:", grasp_pt)
             # print("Gripper width:", width)
 
-            self.finger_tip_left.set_pose(finger_left_base_pt, (Rotation.from_quat(orientation) * finger_left_rot).as_quat())
-            self.finger_tip_right.set_pose(finger_right_base_pt, (Rotation.from_quat(orientation) * finger_right_rot).as_quat())
-            self.finger_mount_left.set_pose(finger_mount_left_base_pt, (Rotation.from_quat(orientation) * finger_mount_left_rot).as_quat())
-            self.finger_mount_right.set_pose(finger_mount_right_base_pt, (Rotation.from_quat(orientation) * finger_mount_right_rot).as_quat())
-            self.outer_bar_left.set_pose(finger_outer_bar_left_base_pt, (Rotation.from_quat(orientation) * finger_outer_bar_left_rot).as_quat())
-            self.outer_bar_right.set_pose(finger_outer_bar_right_base_pt, (Rotation.from_quat(orientation) * finger_outer_bar_right_rot).as_quat())
-            self.inner_bar_left.set_pose(finger_inner_bar_left_base_pt, (Rotation.from_quat(orientation) * finger_inner_bar_left_rot).as_quat())
-            self.inner_bar_right.set_pose(finger_inner_bar_right_base_pt, (Rotation.from_quat(orientation) * finger_inner_bar_right_rot).as_quat())
-            self.base.set_pose(base_pt, (Rotation.from_quat(orientation) * base_rot).as_quat())
+            self.finger_tip_left.set_pose(
+                finger_left_base_pt, 
+                (Rotation.from_quat(orientation) * finger_left_rot).as_quat()
+            )
+            self.finger_tip_right.set_pose(
+                finger_right_base_pt, 
+                (Rotation.from_quat(orientation) * finger_right_rot).as_quat()
+            )
+            self.finger_mount_left.set_pose(
+                finger_mount_left_base_pt, 
+                (Rotation.from_quat(orientation) * finger_mount_left_rot).as_quat()
+            )
+            self.finger_mount_right.set_pose(
+                finger_mount_right_base_pt, 
+                (Rotation.from_quat(orientation) * finger_mount_right_rot).as_quat()
+            )
+            self.outer_bar_left.set_pose(
+                finger_outer_bar_left_base_pt, 
+                (Rotation.from_quat(orientation) * finger_outer_bar_left_rot).as_quat()
+            )
+            self.outer_bar_right.set_pose(
+                finger_outer_bar_right_base_pt, 
+                (Rotation.from_quat(orientation) * finger_outer_bar_right_rot).as_quat()
+            )
+            self.inner_bar_left.set_pose(
+                finger_inner_bar_left_base_pt, 
+                (Rotation.from_quat(orientation) * finger_inner_bar_left_rot).as_quat()
+            )
+            self.inner_bar_right.set_pose(
+                finger_inner_bar_right_base_pt, 
+                (Rotation.from_quat(orientation) * finger_inner_bar_right_rot).as_quat()
+            )
+            self.base.set_pose(
+                base_pt, 
+                (Rotation.from_quat(orientation) * base_rot).as_quat()
+            )
 
             grasp = GraspGeometry()
             grasp.base_pos = base_pt
@@ -440,8 +400,6 @@ class Rizon4sGripper(object):
             grasp.found = True
             return grasp
         except:
-            grasp = GraspGeometry()
-            grasp.found = False
             return grasp
         # x = input()
 

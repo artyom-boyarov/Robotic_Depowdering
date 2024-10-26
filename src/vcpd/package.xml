@@ -9,7 +9,6 @@
 
   <build_depend>rclpy</build_depend>
   <depend>robotic_depowdering_interfaces</depend>
-  <depend>ros2_numpy</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

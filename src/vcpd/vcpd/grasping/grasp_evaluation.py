@@ -9,7 +9,6 @@ class GraspGeometry:
     contact2pos: np.ndarray
     base_pos: np.ndarray
     found: bool
-    
 
 
 def hat(v: np.ndarray):
