@@ -8,7 +8,6 @@
         "centers",
         "widths",
         "quaternions",
-        "min_sing_val_G",
-        "vol_ellipsoid_in_wrench"
+        "minimum_force"
     ]
 }

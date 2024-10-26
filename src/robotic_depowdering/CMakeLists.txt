@@ -23,11 +23,14 @@ find_package(builtin_interfaces REQUIRED)
 find_package(rizon_pick_and_place REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning REQUIRED)
+set(SPDLOG_FMT_EXTERNAL ON)
+find_package(spdlog REQUIRED)
+find_package(fastcdr 1.0.24 REQUIRED)
+find_package(fastrtps 2.6.2 REQUIRED)
+find_package(fmt REQUIRED)
 
 
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-link_directories(${CMAKE_INSTALL_PREFIX}/../gpd/lib)
-include_directories(${CMAKE_INSTALL_PREFIX}/../gpd/include)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -55,37 +58,30 @@ ament_target_dependencies(client rclcpp example_interfaces)
 # target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
 # target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
-add_executable(pick_up_object src/pick_up_object.cpp src/gpd_interface.cpp)
+add_executable(pick_up_object src/pick_up_object.cpp)
 ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
-# GPD isn't available as an ament package, so include it like this:
-target_link_libraries(pick_up_object ${PCL_LIBRARIES} gpd)
-target_link_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/lib)
-target_include_directories(pick_up_object PRIVATE ${CMAKE_INSTALL_PREFIX}/../gpd/include)
-target_link_libraries(pick_up_object flexiv_rdk.x86_64-linux-gnu)
-target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
-target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
+target_link_libraries(pick_up_object
+  "${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib/libflexiv_rdk.x86_64-linux-gnu.a"
+  spdlog::spdlog
+  fastrtps
+  fastcdr
+  fmt
+)
+# target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib)
+target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/include)
+# target_link_directories(pick_up_object PRIVATE ~/Robotic_depowdering/build/flexiv_rdk/lib)
 
-add_executable(moveit_collision_detection_demo src/moveit_collision_detection_demo.cpp)
-ament_target_dependencies(moveit_collision_detection_demo rclcpp moveit_core moveit_ros_planning)
-
-add_executable(loop_parts_collision_demo src/loop_parts_collision_demo.cpp)
-ament_target_dependencies(loop_parts_collision_demo rclcpp Eigen3 visualization_msgs)
-target_include_directories(loop_parts_collision_demo PRIVATE ~/miniforge3/include)
-target_link_directories(loop_parts_collision_demo PRIVATE ~/miniforge3/lib)
-target_link_libraries(loop_parts_collision_demo hpp-fcl)
 
 install( TARGETS
   server
   client
   pick_up_object
   # gripper_test
-  moveit_collision_detection_demo
   DESTINATION lib/${PROJECT_NAME}
 )
 
-set(GPD_SRC_DIR ../gpd)
 install(
-  DIRECTORY cfg test_parts launch ${GPD_SRC_DIR}/models ${GPD_SRC_DIR}/pytorch
+  DIRECTORY cfg test_parts launch
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

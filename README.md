@@ -164,6 +164,10 @@ Run:
 ros2 run vcpd mesh_processing --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd/ -p width:=0.1 -p output_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf
 ros2 run vcpd grasp_analysis --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf -p config:=/home/artyom/Robotic_Depowdering/src/vcpd/config/config.json -p output_path:=/home/artyom/Robotic_Depowdering/src/vcpd/test_parts_grasps_out -p gui:=false -p verbose:=false
 ```
+Which parts can you not grasp:
+- twisted vase (too big)
+- TestDonutMedium (too big)
+- Side gear (unsure)
 To visualize the grasp generation set gui to true.
 
 ### Pick up object + visualization

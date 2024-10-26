@@ -22,7 +22,9 @@ setup(
     entry_points={
         'console_scripts': [
             'mesh_processing = vcpd.grasping.mesh_processing:main',
-            'grasp_analysis = vcpd.grasping.grasp_analysis:main'
+            'grasp_analysis = vcpd.grasping.grasp_analysis:main',
+            'vcpd_service = vcpd.vcpd_service:main',
+            'sample_vcpd_client = vcpd.sample_vcpd_client:main'
         ],
     },
 )

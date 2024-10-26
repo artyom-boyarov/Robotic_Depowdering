@@ -3,7 +3,7 @@ from scipy.spatial.transform import Rotation
 import pybullet as p
 import numpy as np
 import os
-
+from vcpd.grasping.grasp_evaluation import GraspGeometry
 
 
 class RigidObject(object):
@@ -368,14 +368,17 @@ class Rizon4sGripper(object):
         # self.finger_tip_right.set_pose(right_pose[0:3, 3], Rotation.from_matrix(right_pose[0:3, 0:3]).as_quat())
         self._curr_width = width
 
-    def place_fingers(self, width, grasp_pt, x_dir, y_dir, z_dir, orientation):
+    def place_fingers(self, width, grasp_pt, x_dir, y_dir, z_dir, orientation) -> GraspGeometry:
         # width += 0.019 # 0.0095 * 2
         # TODO: Left finger might be up or down depending on z_dir.
         # Cross z and y to get x.
-
+        if width > self._max_width: return False, None, None, None, None
         try:
-            grasp_pt_left = grasp_pt + (width) * y_dir
-            grasp_pt_right = grasp_pt - (width) * y_dir
+            y_dir = (1/np.linalg.norm(y_dir)) * y_dir
+            z_dir = (1/np.linalg.norm(z_dir)) * z_dir
+            x_dir = (1/np.linalg.norm(x_dir)) * x_dir
+            grasp_pt_left = grasp_pt + ((width + 0.0075) / 2) * y_dir
+            grasp_pt_right = grasp_pt - ((width + 0.0075) / 2) * y_dir
 
             # 0.01 is distance from finger tip face to origin in finger tip cad model.
             # z = axis of approach. Fingers parallel to this axis.
@@ -392,6 +395,8 @@ class Rizon4sGripper(object):
             finger_mount_left_rot = Rotation.from_euler("zyx", [90, 0, -90], degrees=True)
             finger_mount_right_rot = Rotation.from_euler("zyx", [-90, 0, 90], degrees=True)
 
+            if np.abs((0.0125 - width) / OUTER_BAR_LENGTH) > 1: return False, None, None, None, None
+            # TODO: Check this. Doesn't seem like we even use theta.
             finger_outer_bar_left_theta = np.arcsin((0.0125 - width) / OUTER_BAR_LENGTH)
             finger_outer_bar_right_theta = -finger_outer_bar_left_theta
             finger_outer_bar_y_displacement = 0.0125 - width
@@ -426,9 +431,18 @@ class Rizon4sGripper(object):
             self.inner_bar_right.set_pose(finger_inner_bar_right_base_pt, (Rotation.from_quat(orientation) * finger_inner_bar_right_rot).as_quat())
             self.base.set_pose(base_pt, (Rotation.from_quat(orientation) * base_rot).as_quat())
 
-            return True, grasp_pt_left, (Rotation.from_quat(orientation) * finger_left_rot).as_matrix(), grasp_pt_right, (Rotation.from_quat(orientation) * finger_right_rot).as_matrix()
+            grasp = GraspGeometry()
+            grasp.base_pos = base_pt
+            grasp.contact1pos = grasp_pt_left
+            grasp.contact1rot = (Rotation.from_quat(orientation) * finger_left_rot).as_matrix()
+            grasp.contact2pos = grasp_pt_right
+            grasp.contact2rot = (Rotation.from_quat(orientation) * finger_right_rot).as_matrix()
+            grasp.found = True
+            return grasp
         except:
-            return False, None, None, None, None
+            grasp = GraspGeometry()
+            grasp.found = False
+            return grasp
         # x = input()
 
     def get_gripper_width(self):

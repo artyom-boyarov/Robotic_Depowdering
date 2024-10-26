@@ -1,0 +1,16 @@
+string name # Name of the object to pick up
+geometry_msgs/Point position # Position the object is at
+---
+bool found_grasp # if we found a grasp
+
+# VCPD should only return one grasp. Let's keep the idea that we are extending 
+# VCPD for grasp *analysis* and therefore this should be VCPD's job to do.
+# Position
+geometry_msgs/Point position # grasp position (bottom/base center of robot hand)
+
+# Orientation represented as three axis (R = [approach binormal axis])
+geometry_msgs/Vector3 approach # grasp approach direction
+geometry_msgs/Vector3 binormal # finger closing direction
+geometry_msgs/Vector3 axis # hand axis
+
+float32 width
