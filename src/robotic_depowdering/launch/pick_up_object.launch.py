@@ -77,54 +77,52 @@ def generate_launch_description():
     ])
 
     # When the flexiv ros2 is fixed we will add this
-    # # Clear RViz of objects
-    # publish_clear_rviz_cmd = ExecuteProcess(
-    #     cmd=[[
-    #         "ros2 topic pub ",
-    #         "--once ",
-    #         "/visualization_markers ",
-    #         "visualization_msgs/msg/Marker ",
-    #         "\"{header: {frame_id: \"base_link\"}, type: 0, action: 3}\"",
-    #     ]],
-    #     shell=True,
-    # )
+    # Clear RViz of objects
+    publish_clear_rviz_cmd = ExecuteProcess(
+        cmd=[[
+            "ros2 topic pub ",
+            "--once ",
+            "/visualization_markers ",
+            "visualization_msgs/msg/Marker ",
+            "\"{header: {frame_id: \"base_link\"}, type: 0, action: 3}\"",
+        ]],
+        shell=True,
+    )
     
     # Publish object to /visualization_markers topic
     #     ros2 topic pub -1 /visualization_markers visualization_msgs/msg/Marker 
     # "{header: {frame_id: \"base_link\"}, type: 10, action: 0, pose: {position: {x: 0.25, y: 0.25, z: 0}}, scale: {x: 0.001, y: 0.001, z: 0
     # .001}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"package://robotic_depowdering/test_parts/Buckle.bin.stl\"}"
-    # object_marker_msg = TextSubstitution([
-    # ])
     
-    # publish_object_cmd = ExecuteProcess(
-    #     cmd=[[
-    #         "ros2 topic pub ",
-    #         "--once ",
-    #         "/visualization_markers ",
-    #         "visualization_msgs/msg/Marker ",
-    #         "\"{header: {frame_id: \"base_link\"}, type: 10, action: 0, pose: {position: {x: ",
-    #         object_x_pos,
-    #         ", y: ",
-    #         object_y_pos,
-    #         ", z: ",
-    #         object_z_pos,
-    #         "}}, scale: {x: 1, y: 1, z: 1}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
-    #         "package://robotic_depowdering/test_parts/",
-    #         object,
-    #         ".bin.stl",
-    #         "\"}\"",
-    #     ]],
-    #     shell=True,
-    # )
-    # # Delay publishing object to /visualization_marker after RViz set up
-    # delay_publish_object = RegisterEventHandler(
-    #     event_handler=OnProcessExit(
-    #         target_action=publish_clear_rviz_cmd,
-    #         on_exit=[publish_object_cmd]
-    #     )
-    # )
+    publish_object_cmd = ExecuteProcess(
+        cmd=[[
+            "ros2 topic pub ",
+            "--once ",
+            "/visualization_markers ",
+            "visualization_msgs/msg/Marker ",
+            "\"{header: {frame_id: \"base_link\"}, type: 10, action: 0, pose: {position: {x: ",
+            object_x_pos,
+            ", y: ",
+            object_y_pos,
+            ", z: ",
+            object_z_pos,
+            "}}, scale: {x: 1, y: 1, z: 1}, color: {r: 0.0, g: 1.0, b: 0.0, a: 1.0}, mesh_resource: \"",
+            "package://robotic_depowdering/test_parts/",
+            object,
+            ".obj.bin.stl",
+            "\"}\"",
+        ]],
+        shell=True,
+    )
+    # Delay publishing object to /visualization_marker after RViz set up
+    delay_publish_object = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=publish_clear_rviz_cmd,
+            on_exit=[publish_object_cmd]
+        )
+    )
 
-    # # Start the move_to_pose_service node
+    # Start the move_to_pose_service node
     # move_to_pose_service = IncludeLaunchDescription(
     #     PythonLaunchDescriptionSource([
     #         FindPackageShare('rizon_pick_and_place'),
@@ -161,20 +159,19 @@ def generate_launch_description():
     )
 
     # Delay picking up the object after the marker is put into RViz
-    # delay_pick_up_object = RegisterEventHandler(
-    #     event_handler=OnProcessExit(
-    #         target_action=publish_object_cmd,
-    #         on_exit=[pick_up_object]
-    #     )
-    # )
+    delay_pick_up_object = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=publish_object_cmd,
+            on_exit=[pick_up_object]
+        )
+    )
 
 
     nodes = [
-        # publish_clear_rviz_cmd,
-        # delay_publish_object,
-        # delay_pick_up_object,
-        pick_up_object,
-        vcpd_service
+        publish_clear_rviz_cmd,
+        delay_publish_object,
+        delay_pick_up_object,
+        vcpd_service,
         # move_to_pose_service,
     ]
     return LaunchDescription(declared_arguments + nodes)

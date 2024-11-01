@@ -38,7 +38,6 @@ def generate_launch_description():
     fake_sensor_commands_param_name = "fake_sensor_commands"
     warehouse_sqlite_path_param_name = "warehouse_sqlite_path"
     start_servo_param_name = "start_servo"
-
     # Declare command-line arguments
     declared_arguments = []
 
@@ -358,7 +357,7 @@ def generate_launch_description():
         package="rizon_pick_and_place",
         executable="move_to_pose_service"
     )
-
+    
     nodes = [
         move_group_node,
         robot_state_publisher_node,

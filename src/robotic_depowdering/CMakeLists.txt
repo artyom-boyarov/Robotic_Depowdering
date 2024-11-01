@@ -60,13 +60,7 @@ ament_target_dependencies(client rclcpp example_interfaces)
 
 add_executable(pick_up_object src/pick_up_object.cpp)
 ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
-target_link_libraries(pick_up_object
-  "${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib/libflexiv_rdk.x86_64-linux-gnu.a"
-  spdlog::spdlog
-  fastrtps
-  fastcdr
-  fmt
-)
+
 # target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib)
 target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/include)
 # target_link_directories(pick_up_object PRIVATE ~/Robotic_depowdering/build/flexiv_rdk/lib)
