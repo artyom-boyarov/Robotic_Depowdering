@@ -1,4 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/wait_for_message.hpp"
 #include "builtin_interfaces/msg/duration.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
@@ -7,6 +8,7 @@
 #include "geometry_msgs/msg/pose.hpp"
 #include "Eigen/Geometry"
 #include "tf2_eigen/tf2_eigen.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 // #include <flexiv/rdk/robot.hpp>
 // #include <flexiv/rdk/gripper.hpp>
 // #include <flexiv/rdk/utility.hpp>
@@ -18,9 +20,12 @@
 #include <thread>
 #include <string>
 #include <optional>
+#include <stdio.h>
+#include <unistd.h>
+#include <termios.h>
 
 using namespace std::chrono_literals;
-
+using std::placeholders::_1;
 using GraspConfiguration = robotic_depowdering_interfaces::srv::VCPDGrasp::Response;
 using GraspRequest = robotic_depowdering_interfaces::srv::VCPDGrasp::Request;
 
@@ -106,6 +111,7 @@ public:
 
         vcpd_client = this->create_client<robotic_depowdering_interfaces::srv::VCPDGrasp>("vcpd_get_grasp");
 
+
         RCLCPP_INFO(this->get_logger(), "Initialized pick_up_object_node to pick up %s located at <%f, %f, %f>",
                     object.c_str(), object_x, object_y, object_z);
     }
@@ -127,7 +133,38 @@ public:
         graspConfiguration->position.y += object_position.y();
         graspConfiguration->position.z += object_position.z();
 
-        moveToPose(graspConfiguration);
+        geometry_msgs::msg::Pose grasp_pose;
+        if (!moveToGraspPose(graspConfiguration, grasp_pose))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp pose");
+            return;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "====Switch the robot to manual mode and close the gripper====");
+        RCLCPP_INFO(this->get_logger(), "Required width: [%3f] Required Force: [%3f]", graspConfiguration->width, graspConfiguration->force);
+        RCLCPP_INFO(this->get_logger(), "Once you have closed the gripper, press 'continue' in Rviz");
+        
+        sensor_msgs::msg::Joy rviz_msg;
+        while (!rclcpp::wait_for_message(rviz_msg, this->shared_from_this(), "/rviz_visual_tools_gui", std::chrono::seconds(5))) {
+            RCLCPP_INFO(this->get_logger(), "Waiting for continue to be clicked");
+        }
+
+        doRaise(grasp_pose);
+    }
+
+    void doRaise(const geometry_msgs::msg::Pose& grasp_pose) {
+        // if (msg->buttons[2] != 1) return;
+        RCLCPP_INFO(this->get_logger(), "Lifting part");
+
+        auto raisedPose = grasp_pose;
+        raisedPose.position.z += 0.2; // Raise by 20 cm
+
+        if (!moveToPose(raisedPose))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to raise part");
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Test finished. When ready, switch the robot to manual mode to release the part");
     }
 
     std::optional<std::shared_ptr<GraspConfiguration>> getGrasp()
@@ -161,10 +198,8 @@ public:
         return {};
     }
 
-    void moveToPose(std::shared_ptr<GraspConfiguration> graspConfiguration)
+    bool moveToGraspPose(std::shared_ptr<GraspConfiguration> graspConfiguration, geometry_msgs::msg::Pose &target_pose)
     {
-
-        auto target_pose = geometry_msgs::msg::Pose();
 
         target_pose.position = graspConfiguration->position;
 
@@ -178,6 +213,11 @@ public:
 
         target_pose.orientation = tf2::toMsg(rot_q);
 
+        return moveToPose(target_pose);
+    }
+
+    bool moveToPose(const geometry_msgs::msg::Pose &target_pose)
+    {
         // Move the arm here.
         // Create a service client to call the move_to_pose service
         auto client = this->create_client<robotic_depowdering_interfaces::srv::MoveToPose>("move_to_pose");
@@ -185,32 +225,41 @@ public:
         {
             if (!rclcpp::ok())
             {
-                RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
-                return;
+                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
+                return false;
             }
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for the service to be available...");
+            RCLCPP_INFO(this->get_logger(), "Waiting for the service to be available...");
         }
 
         auto request = std::make_shared<robotic_depowdering_interfaces::srv::MoveToPose::Request>();
         request->target_pose = target_pose;
+        RCLCPP_INFO(this->get_logger(), "Begin request to move to pose with position <%f, %f, %f>",
+                    target_pose.position.x,
+                    target_pose.position.y,
+                    target_pose.position.z);
 
         auto result = client->async_send_request(request);
         if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS)
         {
             if (result.get()->success)
             {
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Successfully moved to target pose.");
+                RCLCPP_INFO(this->get_logger(), "Successfully moved to target pose.");
             }
             else
             {
-                RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to move to target pose.");
+                RCLCPP_ERROR(this->get_logger(), "Failed to move to target pose.");
+                return false;
             }
         }
         else
         {
-            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service move_to_pose");
+            RCLCPP_ERROR(this->get_logger(), "Failed to call service move_to_pose");
+            return false;
         }
+        return true;
     }
+
+
 };
 
 std::shared_ptr<rclcpp::Node> node;

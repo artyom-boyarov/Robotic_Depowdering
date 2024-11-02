@@ -175,12 +175,14 @@ def generate_launch_description():
         "move_group": {
             "planning_plugin": "ompl_interface/OMPLPlanner",
             "request_adapters": "default_planner_request_adapters/AddTimeOptimalParameterization "
-            "default_planner_request_adapters/ResolveConstraintFrames "
-            "default_planner_request_adapters/FixWorkspaceBounds "
-            "default_planner_request_adapters/FixStartStateBounds "
-            "default_planner_request_adapters/FixStartStateCollision "
-            "default_planner_request_adapters/FixStartStatePathConstraints",
+                                "default_planner_request_adapters/ResolveConstraintFrames "
+                                "default_planner_request_adapters/FixWorkspaceBounds "
+                                "default_planner_request_adapters/FixStartStateBounds "
+                                "default_planner_request_adapters/FixStartStateCollision "
+                                "default_planner_request_adapters/FixStartStatePathConstraints",
             "start_state_max_bounds_error": 0.1,
+            # Configure the planner and set the optimization objective
+            "default_planner_config": "FMT"
         }
     }
     ompl_planning_yaml = load_yaml("flexiv_moveit_config", "config/ompl_planning.yaml")
@@ -197,7 +199,7 @@ def generate_launch_description():
 
     trajectory_execution = {
         "moveit_manage_controllers": False,
-        "trajectory_execution.allowed_execution_duration_scaling": 1.2,
+        "trajectory_execution.allowed_execution_duration_scaling": 2.0,
         "trajectory_execution.allowed_goal_duration_margin": 0.5,
         "trajectory_execution.allowed_start_tolerance": 0.01,
     }

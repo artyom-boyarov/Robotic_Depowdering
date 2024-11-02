@@ -77,6 +77,9 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
 
 
     obj_center_of_mass = np.array(mesh.center_mass)
+    OBJ_DENSITY = 1
+    obj_mass = mesh.convex_hull.volume * OBJ_DENSITY
+
     rclpy.node.get_logger(LOGGER_NAME).info('%s has center of mass at <%f, %f, %f>' %
                                                 (obj_name,
                                                 obj_center_of_mass[0],
@@ -234,8 +237,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             grasp_info['quaternions'].append(quat[angle_idx])
                             # Friction coefficient can be between 0.05 to 0.75
                             # Object mass of 100g
-                            grasp_info['minimum_force'] = grasp_eval.get_minimum_force_friction(rot_mat[0:3, 1], 0.75, 0.1)
-                            grasp_info['dist_to_com'] = np.linalg.norm(centers[j] - obj_center_of_mass)
+                            grasp_info['minimum_force'].append(grasp_eval.get_minimum_force_friction(rot_mat[0:3, 1], 0.75, obj_mass))
+                            grasp_info['dist_to_com'].append(np.linalg.norm(centers[j] - obj_center_of_mass))
 
                     quats[j] = quat[0]
 
@@ -262,6 +265,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     grasp.approach = numpy_arr_to_vec3(grasp_info['z_directions'][closest_to_com_grasp])
     grasp.position = numpy_arr_to_point(grasp_info['base_pos'][closest_to_com_grasp])
     grasp.width = grasp_info['widths'][closest_to_com_grasp]
+    grasp.force = (grasp_info['minimum_force'][closest_to_com_grasp]) * 1.2 # 20% leniency
 
     rclpy.node.get_logger(LOGGER_NAME).info("Returning grasp for %s with base position at <%f, %f, %f> and width %f" %
         (obj_name, grasp.position.x, grasp.position.y, grasp.position.z, grasp.width))

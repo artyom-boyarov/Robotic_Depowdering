@@ -14,3 +14,4 @@ geometry_msgs/Vector3 binormal # finger closing direction
 geometry_msgs/Vector3 axis # hand axis
 
 float32 width
+float32 force

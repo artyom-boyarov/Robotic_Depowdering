@@ -23,11 +23,7 @@ find_package(builtin_interfaces REQUIRED)
 find_package(rizon_pick_and_place REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning REQUIRED)
-set(SPDLOG_FMT_EXTERNAL ON)
-find_package(spdlog REQUIRED)
-find_package(fastcdr 1.0.24 REQUIRED)
-find_package(fastrtps 2.6.2 REQUIRED)
-find_package(fmt REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -59,7 +55,19 @@ ament_target_dependencies(client rclcpp example_interfaces)
 # target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
 
 add_executable(pick_up_object src/pick_up_object.cpp)
-ament_target_dependencies(pick_up_object rizon_pick_and_place rclcpp robotic_depowdering_interfaces trajectory_msgs builtin_interfaces tf2 tf2_ros tf2_eigen Eigen3)
+ament_target_dependencies(
+  pick_up_object 
+  rizon_pick_and_place 
+  rclcpp 
+  robotic_depowdering_interfaces 
+  trajectory_msgs 
+  builtin_interfaces 
+  tf2 
+  tf2_ros 
+  tf2_eigen 
+  Eigen3 
+  sensor_msgs
+)
 
 # target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib)
 target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/include)
