@@ -182,7 +182,7 @@ def generate_launch_description():
                                 "default_planner_request_adapters/FixStartStatePathConstraints",
             "start_state_max_bounds_error": 0.1,
             # Configure the planner and set the optimization objective
-            "default_planner_config": "FMT"
+            # "default_planner_config": "An"
         }
     }
     ompl_planning_yaml = load_yaml("flexiv_moveit_config", "config/ompl_planning.yaml")

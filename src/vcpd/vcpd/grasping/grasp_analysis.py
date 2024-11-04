@@ -217,6 +217,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                         p.removeUserDebugItem(ly)
                         p.removeUserDebugItem(lz)
 
+                        
+
                         if not grasp_geometry.found: continue
                         is_force_closure = grasp_eval.is_force_closure(grasp_geometry)
                         
@@ -226,6 +228,12 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             grasp_bite_geometry.found and is_force_closure:
                             if verbose: rclpy.node.get_logger(LOGGER_NAME).info("==No Collision, can place fingers, and is force closure: adding to grasp info vector==")
                             feasibles[j] = 1
+
+                            # print(vertex)
+                            # print("Vertex no.:", i)
+                            # print("Face no.: ",j)
+                            # print(selected_faces[j])
+                            # x = input()
                             # print(widths[j])
                             grasp_info['vertex_ids'].append(i)
                             grasp_info['x_directions'].append(rot_mat[0:3, 0])

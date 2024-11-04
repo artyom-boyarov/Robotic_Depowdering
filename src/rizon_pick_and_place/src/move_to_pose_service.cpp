@@ -25,7 +25,7 @@ void handle_move_to_pose(
 
     moveit_msgs::msg::PositionConstraint pos_constr;
     // TODO: Find how to stop this from hitting the table.
-    move_group_interface_->setPathConstraints()
+    // move_group_interface_->setPathConstraints()
     // Planning
     // draw_title_("Planning");
     // moveit_visual_tools_->trigger();
