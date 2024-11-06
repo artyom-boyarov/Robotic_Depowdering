@@ -103,6 +103,7 @@ def process_obj_mesh(object_name, output):
     ms.apply_filter('apply_coord_laplacian_smoothing_surface_preserving',
                     angledeg=10, iterations=10)
     ms.save_current_mesh(os.path.join(obj_path, object_name + '.obj'))
+    ms.save_current_mesh(os.path.join(obj_path, object_name + '.ply'))
     xml_str = get_obj_urdf(object_name, m=1.0, s=1.0)
     with open(os.path.join(obj_path, object_name + '.urdf'), 'w') as f:
         f.write(xml_str)

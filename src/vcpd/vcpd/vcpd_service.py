@@ -24,7 +24,7 @@ class VCPDService(Node):
 
 
     def get_vcpd_grasp_cb(self, request: VCPDGrasp.Request, response: VCPDGrasp.Response):
-        process_obj_mesh(request.name, self.mesh_dir)
+        # process_obj_mesh(request.name, self.mesh_dir)
         response = find_grasp(self.enable_gui, self.enable_verbose, request.name, self.mesh_dir)
         return response
 

@@ -14,6 +14,7 @@ from geometry_msgs.msg import Point, Vector3
 from . import grasp_evaluation as grasp_eval
 from ament_index_python.packages import get_package_share_directory
 from .constants import ROBOTIC_DEPOWDERING_TMP_DIR, COLLISION_ANGLE_EPSILON
+import pyvista
 
 def numpy_arr_to_vec3(vec: np.ndarray) -> Vector3:
     output_vec = Vector3()
@@ -69,7 +70,14 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     rclpy.node.get_logger(LOGGER_NAME).info("Calculating grasps for: %s " % (obj_name))
 
     obj_path = os.path.join(mesh_path, obj_name, obj_name+'.obj')
+
+    mesh = pyvista.read(obj_path)
+    mesh.compute_normals(inplace=True, auto_orient_normals=True)
+    mesh.save(obj_path)
+
     mesh = trimesh.load(obj_path)
+    # mesh.rezero()
+    print(mesh.vertex_normals)
     vis_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     col_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     body_params = {'baseMass': 0, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
