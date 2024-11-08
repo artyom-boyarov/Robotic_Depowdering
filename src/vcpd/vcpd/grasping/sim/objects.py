@@ -30,6 +30,7 @@ class RigidObject(object):
             p.changeDynamics(self.obj_id, linkIndex=-1, mass=kwargs['mass'])
         else:
             raise ValueError('Invalid arguments for RigidObject initialization.')
+        p.changeVisualShape(self.obj_id, -1, rgbaColor=kwargs['color'])
 
     def change_dynamics(self, *args, **kwargs):
         p.changeDynamics(self.obj_id, -1, *args, **kwargs)
@@ -112,6 +113,7 @@ class Rizon4sGripper(object):
             'outer_bar_left',
             'outer_bar_right'
         ]
+        self.color=[0.7, 0.7, 0.7, 1.0]
 
         # TODO: Look at grav.urdf to find correct orientations and base positions for all of the parts.
         self.vertex_sets = dict()
@@ -130,7 +132,8 @@ class Rizon4sGripper(object):
         self.__setattr__('base', RigidObject('base',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         # Finger outer bars
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'outer_bar.obj')
         col_path = os.path.join(asset_path, folder_name, 'collision', 'outer_bar.obj')
@@ -145,7 +148,8 @@ class Rizon4sGripper(object):
         self.__setattr__('outer_bar_left', RigidObject('outer_bar_left',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'outer_bar.obj')
         col_path = os.path.join(asset_path, folder_name, 'collision', 'outer_bar.obj')
         vis_params = {'shapeType': p.GEOM_MESH, 'fileName': vis_path, 'meshScale': [-.001] * 3}
@@ -158,7 +162,8 @@ class Rizon4sGripper(object):
         self.__setattr__('outer_bar_right', RigidObject('outer_bar_right',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
     
         # Finger inner bars
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'inner_bar.obj')
@@ -173,7 +178,8 @@ class Rizon4sGripper(object):
         self.__setattr__('inner_bar_left', RigidObject('inner_bar_left',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'inner_bar.obj')
         col_path = os.path.join(asset_path, folder_name, 'collision', 'inner_bar.obj')
         vis_params = {'shapeType': p.GEOM_MESH, 'fileName': vis_path, 'meshScale': [-.001] * 3}
@@ -186,7 +192,8 @@ class Rizon4sGripper(object):
         self.__setattr__('inner_bar_right', RigidObject('inner_bar_left',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         
         # Finger mounts
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'finger_mount.obj')
@@ -202,7 +209,8 @@ class Rizon4sGripper(object):
         self.__setattr__('finger_mount_left', RigidObject('finger_mount_left',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'finger_mount.obj')
         col_path = os.path.join(asset_path, folder_name, 'collision', 'finger_mount.obj')
         vis_params = {'shapeType': p.GEOM_MESH, 'fileName': vis_path, 'meshScale': [-.001] * 3}
@@ -215,7 +223,8 @@ class Rizon4sGripper(object):
         self.__setattr__('finger_mount_right', RigidObject('finger_mount_right',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
     
 
         # Finger tips
@@ -231,7 +240,8 @@ class Rizon4sGripper(object):
         self.__setattr__('finger_tip_left', RigidObject('finger_tip_left',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
         vis_path = os.path.join(asset_path, folder_name, 'visual', 'finger_tip.obj')
         col_path = os.path.join(asset_path, folder_name, 'collision', 'finger_tip.obj')
         vis_params = {'shapeType': p.GEOM_MESH, 'fileName': vis_path, 'meshScale': [.001] * 3}
@@ -244,7 +254,8 @@ class Rizon4sGripper(object):
         self.__setattr__('finger_tip_right', RigidObject('finger_tip_right',
                                                 vis_params=vis_params,
                                                 col_params=col_params,
-                                                body_params=body_params))
+                                                body_params=body_params,
+                                                color=self.color))
 
 
         

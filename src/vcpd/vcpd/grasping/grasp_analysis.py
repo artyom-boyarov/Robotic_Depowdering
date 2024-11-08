@@ -35,9 +35,12 @@ def numpy_arr_to_point(vec: np.ndarray) -> Point:
 def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDGrasp.Response:
     mode = p.GUI if gui else p.DIRECT
     physics_id = p.connect(mode)
-    p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+    p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, rgbBackground=[1,1,1])
     p.resetDebugVisualizerCamera(cameraDistance=0.57, cameraYaw=0, cameraPitch=-70, cameraTargetPosition=[0, 0, 0])
     p.setGravity(0, 0, -9.8)
+
+    
+    
 
     vcpd_package_share_dir = get_package_share_directory('vcpd')
     robotic_depowdering_package_share_dir = get_package_share_directory('robotic_depowdering')
@@ -52,17 +55,23 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         baseCollisionShapeIndex=p.createCollisionShape(
             shapeType=p.GEOM_MESH, 
             fileName=floor_obj_path,
-            meshScale=[1]*3
+            meshScale=[100]*3
         ),
         baseVisualShapeIndex=p.createVisualShape(shapeType=p.GEOM_MESH, 
             fileName=floor_obj_path,
-            meshScale=[1]*3
+            meshScale=[100]*3
         ),
         baseMass = 0,
         basePosition = [0,0,0],
         baseOrientation = [0,0,0,1]
     )
+    p.changeVisualShape(floor_id, -1, rgbaColor=[0.9, 0.9, 0.9, 1])
     
+    x_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0.2,0,0], lineColorRGB=[1, 0,0], lifeTime=0, lineWidth=4.0)
+    y_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0.2,0], lineColorRGB=[1, 1,0], lifeTime=0, lineWidth=4.0)
+    z_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0,0.2], lineColorRGB=[0, 1,0], lifeTime=0, lineWidth=4.0)
+
+
     # TODO: When we get the updated flexiv library, get this to point to the
     # meshes in robotic_depowdering
     rg = Rizon4sGripper(os.path.join(vcpd_package_share_dir, 'assets'))
@@ -80,8 +89,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     np.savetxt("round_U_surface_normals.csv", mesh.vertex_normals, delimiter=',')
     vis_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     col_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
-    body_params = {'baseMass': 0, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
-    obj = RigidObject(obj_name, vis_params=vis_params, col_params=col_params, body_params=body_params)
+    body_params = {'baseMass': 1, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
+    obj = RigidObject(obj_name, vis_params=vis_params, col_params=col_params, body_params=body_params, color=[1.0, 1.0, 0.0, 1.0])
 
 
     obj_center_of_mass = np.array(mesh.center_mass)
@@ -108,8 +117,12 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'minimum_force': [],
                     'dist_to_com': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
-    for i in range(0, num_vertices, 20):
+    prev_vertex = mesh.vertices[0]
+    for i in range(0, num_vertices, 50):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
+        # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
+        # if np.linalg.norm(vertex - prev_vertex) < 0.015: continue # Skip vertices too close
+        prev_vertex = vertex
         direction = np.mean(mesh.face_normals[mesh.vertex_faces[i]], axis=0)
         direction = direction / np.linalg.norm(direction)
         normal = normal / np.linalg.norm(normal)
@@ -123,9 +136,9 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         
         flag = dist <= 2 * mean_edge_distance
         vertex_faces = mesh.vertex_faces[flag]
-        print("Vertex faces", vertex_faces)
+        # print("Vertex faces", vertex_faces)
         vertex_ids = mesh.faces[vertex_faces]
-        print("Vertex ids", vertex_ids)
+        # print("Vertex ids", vertex_ids)
         # visualize vertices
         # spheres = []
         # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
@@ -162,9 +175,6 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
             selected_ids = np.unique(np.sum(selected_intersects*1e4, axis=1).astype(int), return_index=True)[1]
             
             selected_faces, selected_intersects = selected_faces[selected_ids], selected_intersects[selected_ids]
-            print("sids",selected_ids)
-            print("sis", selected_intersects)
-            print("sf", selected_faces)
             num_intersects = selected_intersects.shape[0]
             widths = np.linalg.norm((vertex.reshape(1, 3) - selected_intersects), axis=1)
             # width_flag = widths < max_width
@@ -221,9 +231,6 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                         ly = p.addUserDebugLine(lineFromXYZ=centers[j], lineToXYZ=centers[j] + rot_mat[0:3, 1], lineColorRGB=[0, 1,1], lifeTime=0)
                         lz = p.addUserDebugLine(lineFromXYZ=centers[j], lineToXYZ=centers[j] + rot_mat[0:3, 2], lineColorRGB=[1, 1,0], lifeTime=0)
 
-                        # Place fingers 'around' the object (i.e. move to this initial pose, then close the fingers)
-                        grasp_bite_geometry = rg.place_fingers(widths[j] + 0.005, centers[j], rot_mat[0:3, 0], rot_mat[0:3, 1], rot_mat[0:3, 2], quat[angle_idx])
-                        is_before_collided = rg.is_collided([])
                         grasp_geometry = rg.place_fingers(widths[j], centers[j], rot_mat[0:3, 0], rot_mat[0:3, 1], rot_mat[0:3, 2], quat[angle_idx])
                         
                         grasp_geometry.com = obj_center_of_mass                        
@@ -237,17 +244,16 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                         is_force_closure = grasp_eval.is_force_closure(grasp_geometry)
                         
                         if (not rg.is_collided([])) and \
-                            grasp_geometry.found and \
-                            (not is_before_collided) and \
-                            grasp_bite_geometry.found and is_force_closure:
+                            grasp_geometry.found and is_force_closure:
                             if verbose: rclpy.node.get_logger(LOGGER_NAME).info("==No Collision, can place fingers, and is force closure: adding to grasp info vector==")
                             feasibles[j] = 1
 
-                            # print(vertex)
-                            # print("Vertex no.:", i)
-                            # print("Face no.: ",j)
-                            # print(selected_faces[j])
-                            # print(widths[j])
+                            print("Vertex no.:", i)
+                            print("Vertex:", vertex)
+                            print("Vertex normal:", mesh.vertex_normals[i])
+                            print("Face no.: ",selected_faces[j])
+                            print("Width:", widths[j])
+                            x = input()
                             grasp_info['vertex_ids'].append(i)
                             grasp_info['x_directions'].append(rot_mat[0:3, 0])
                             grasp_info['y_directions'].append(rot_mat[0:3, 1])
