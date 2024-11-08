@@ -1,5 +1,5 @@
 vcpd_service:
   ros__parameters:
-    gui: True
+    gui: False
     mesh_dir: "/home/artyom/Robotic_Depowdering/tmp"
     verbose: False

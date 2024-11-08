@@ -3,10 +3,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include "robotic_depowdering_interfaces/srv/move_to_pose.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 
 std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
+std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_;
 std::shared_ptr<moveit_visual_tools::MoveItVisualTools> moveit_visual_tools_;
 
 std::function<void(std::string)> draw_title_;
@@ -23,28 +25,21 @@ void handle_move_to_pose(
     // Set the target pose
     move_group_interface_->setPoseTarget(request->target_pose);
 
-    moveit_msgs::msg::PositionConstraint pos_constr;
-    // TODO: Find how to stop this from hitting the table.
-    // move_group_interface_->setPathConstraints()
-    // Planning
-    // draw_title_("Planning");
-    // moveit_visual_tools_->trigger();
+    // moveit_msgs::msg::CollisionObject collision_object;
+    // collision_object.header.frame_id = move_group_interface_->getPlanningFrame();
+    // collision_object.id = "target_obj";
+
 
     auto const [success, plan] = [&move_group_interface = move_group_interface_] {
-      moveit::planning_interface::MoveGroupInterface::Plan msg;
-      auto const ok = static_cast<bool>(move_group_interface->plan(msg));
-      return std::make_pair(ok, msg);
+      moveit::planning_interface::MoveGroupInterface::Plan move_plan;
+      auto const ok = static_cast<bool>(move_group_interface->plan(move_plan));
+      return std::make_pair(ok, move_plan);
     }();
 
     
     if (success)
     {
       RCLCPP_INFO(node->get_logger(), "Planning succeeded, executing trajectory");
-      // draw_trajectory_tool_path_(plan.trajectory_);
-      // moveit_visual_tools_->trigger();
-      // prompt_("Press 'Next' in the RvizVisualToolsGui window to execute");
-      // draw_title_("Executing");
-      // moveit_visual_tools_->trigger();
 
       auto const ok = static_cast<bool>(move_group_interface_->execute(plan));
       if (!ok) {
@@ -75,6 +70,8 @@ int main(int argc, char *argv[])
   move_group_interface_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(node, "rizon_arm");
 
   RCLCPP_INFO(node->get_logger(), "Initialized move_group_interface");
+
+  planning_scene_interface_ = std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
   // Construct and initialize MoveItVisualTools
   moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
       node, "base_link", rviz_visual_tools::RVIZ_MARKER_TOPIC, move_group_interface_->getRobotModel());

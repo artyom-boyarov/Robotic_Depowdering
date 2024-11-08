@@ -142,14 +142,15 @@ public:
 
         RCLCPP_INFO(this->get_logger(), "====Switch the robot to manual mode and close the gripper====");
         RCLCPP_INFO(this->get_logger(), "Required width: [%3f] Required Force: [%3f]", graspConfiguration->width, graspConfiguration->force);
-        RCLCPP_INFO(this->get_logger(), "Once you have closed the gripper, press 'continue' in Rviz");
         
-        sensor_msgs::msg::Joy rviz_msg;
-        while (!rclcpp::wait_for_message(rviz_msg, this->shared_from_this(), "/rviz_visual_tools_gui", std::chrono::seconds(5))) {
-            RCLCPP_INFO(this->get_logger(), "Waiting for continue to be clicked");
-        }
+        // RCLCPP_INFO(this->get_logger(), "Once you have closed the gripper, press 'continue' in Rviz");
+        
+        // sensor_msgs::msg::Joy rviz_msg;
+        // while (!rclcpp::wait_for_message(rviz_msg, this->shared_from_this(), "/rviz_visual_tools_gui", std::chrono::seconds(5))) {
+        //     RCLCPP_INFO(this->get_logger(), "Waiting for continue to be clicked");
+        // }
 
-        doRaise(grasp_pose);
+        // doRaise(grasp_pose);
     }
 
     void doRaise(const geometry_msgs::msg::Pose& grasp_pose) {

@@ -77,7 +77,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
 
     mesh = trimesh.load(obj_path)
     # mesh.rezero()
-    print(mesh.vertex_normals)
+    np.savetxt("round_U_surface_normals.csv", mesh.vertex_normals, delimiter=',')
     vis_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     col_params = {'shapeType': p.GEOM_MESH, 'fileName': obj_path, 'meshScale': [1]*3}
     body_params = {'baseMass': 0, 'basePosition': [0, 0, 0], 'baseOrientation': [0, 0, 0, 1]}
@@ -108,7 +108,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'minimum_force': [],
                     'dist_to_com': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
-    for i in range(num_vertices):
+    for i in range(0, num_vertices, 20):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         direction = np.mean(mesh.face_normals[mesh.vertex_faces[i]], axis=0)
         direction = direction / np.linalg.norm(direction)
@@ -123,7 +123,9 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         
         flag = dist <= 2 * mean_edge_distance
         vertex_faces = mesh.vertex_faces[flag]
+        print("Vertex faces", vertex_faces)
         vertex_ids = mesh.faces[vertex_faces]
+        print("Vertex ids", vertex_ids)
         # visualize vertices
         # spheres = []
         # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
@@ -158,7 +160,11 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
             selected_faces, selected_ids = np.unique(vertex_faces[intersect_flag], return_index=True)
             selected_intersects = intersects[intersect_flag][selected_ids]
             selected_ids = np.unique(np.sum(selected_intersects*1e4, axis=1).astype(int), return_index=True)[1]
+            
             selected_faces, selected_intersects = selected_faces[selected_ids], selected_intersects[selected_ids]
+            print("sids",selected_ids)
+            print("sis", selected_intersects)
+            print("sf", selected_faces)
             num_intersects = selected_intersects.shape[0]
             widths = np.linalg.norm((vertex.reshape(1, 3) - selected_intersects), axis=1)
             # width_flag = widths < max_width
@@ -241,7 +247,6 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             # print("Vertex no.:", i)
                             # print("Face no.: ",j)
                             # print(selected_faces[j])
-                            # x = input()
                             # print(widths[j])
                             grasp_info['vertex_ids'].append(i)
                             grasp_info['x_directions'].append(rot_mat[0:3, 0])

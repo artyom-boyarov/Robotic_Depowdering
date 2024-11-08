@@ -1,8 +1,9 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, RegisterEventHandler, ExecuteProcess
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, RegisterEventHandler, ExecuteProcess, EmitEvent
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution
 from launch.event_handlers import OnProcessExit
+from launch.events import Shutdown
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
@@ -172,6 +173,18 @@ def generate_launch_description():
         delay_publish_object,
         delay_pick_up_object,
         vcpd_service,
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=pick_up_object,
+                on_exit=[
+                    EmitEvent(
+                        event=Shutdown(
+                            reason=('Pick up object complete')
+                        )
+                    )
+                ]
+            )
+        )
         # move_to_pose_service,
     ]
     return LaunchDescription(declared_arguments + nodes)
