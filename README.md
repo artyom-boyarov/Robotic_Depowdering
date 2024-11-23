@@ -2,8 +2,8 @@
 
 ## Packages
 - ```flexiv_ros2```: contains the Flexiv ROS2 package and RDK, used for interfacing with, controlling and simulating the Flexiv Rizon 4s.
-- ```gpd```: Grasp Pose Detection, used to detect where to grasp an object.
-  - <b>When adding gpd as a dependency</b>: don't add gpd as a ament package. GPD doesn't support this. Look into ```src/robotic_depowdering/CMakeLists.txt``` to see how you can add gpd to your package.
+- ```vcpd```: VCPD grasp generation library, extended with FEA-based grasp analysis.
+- ```rizon_pick_and_place```: interface to MoveIt! for motion planning and IK.
 - ```robotic_depowdering```: nodes and services used in the depowdering process.
 - ```robotic_depowdering_interfaces```: message and service definitions used by ```robotic_depowdering```.
 ## System requirements
@@ -83,77 +83,82 @@ source ~/.bashrc
 Follow the installation instructions to install ROS2 Humble and Gazebo Fortress:
 - ROS2: <a>https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html</a>
 - Gazebo: <a>https://gazebosim.org/docs/fortress/install_ubuntu</a>
-Once everything is installed, move onto installing and building this repo. Source ROS underlay: <br>
+Once everything is installed, move onto installing and building this repo.
+1. Source ROS underlay: <br>
 ```
 source /opt/ros/humble/setup.sh
 ```
-Install dependencies (from packages + pcl_tools):<br>
+2. Install dependencies (from packages + petsc4py + dolfinx):<br>
 ```
 rosdep install --from-paths src --ignore-src -r -y
-sudo apt install pcl-tools -y
+sudo apt install python3-petsc4py python3-dolfinx
 ```
-Install dependencies for the Flexiv ROS2 packages:
+3. Install dependencies for the Flexiv ROS2 packages:
 ```
-sudo apt install -y \
-python3-colcon-common-extensions \
-python3-rosdep2 \
-libeigen3-dev \
-ros-humble-xacro \
-ros-humble-tinyxml2-vendor \
-ros-humble-ros2-control \
-ros-humble-realtime-tools \
-ros-humble-control-toolbox \
-ros-humble-moveit \
-ros-humble-ros2-controllers \
-ros-humble-test-msgs \
-ros-humble-joint-state-publisher \
-ros-humble-joint-state-publisher-gui \
-ros-humble-robot-state-publisher \
-ros-humble-rviz2
-```
-First, build gpd:<br>
-## TODO: Get rid of this, GPD is nonsense!
-```
-colcon build --symlink-install --packages-select gpd
-```
-Then build the flexiv rdk:
-## TODO: Update this once the Flexiv RDK build is fixed, plus create patch for dodgy Fast-DDS package
-```
-cd src/flexiv_ros2/flexiv_hardware/rdk
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=<where you cloned this repo>/install/flexiv_rdk
-make
-sudo make install
-```
-Lastly, build hpp-fcl (for collision detection)
-```
-cd ~
-wget https://github.com/humanoid-path-planner/hpp-fcl/releases/download/v2.4.5/hpp-fcl-2.4.5.tar.gz
-tar -xvf hpp-fcl-2.4.5.tar.gz
-cd hpp-fcl-2.4.5
-mkdir build
-cd build
-cmake .. -DBUILD_PYTHON_INTERFACE=OFF
-make -j4
-sudo make install
-```
-## TODO: Update hpp-fcl dependency in CMakeLists.txt
-> [!NOTE]
-> Soon, when version 1.0 of flexiv_ros2 is released, you won’t need to use the rdk for controlling the gripper as you will be able to do this through ROS. Keep an eye out for this.
+   sudo apt install -y \
+   python3-colcon-common-extensions \
+   python3-rosdep2 \
+   libeigen3-dev \
+   ros-humble-xacro \
+   ros-humble-tinyxml2-vendor \
+   ros-humble-ros2-control \
+   ros-humble-realtime-tools \
+   ros-humble-control-toolbox \
+   ros-humble-moveit \
+   ros-humble-ros2-controllers \
+   ros-humble-test-msgs \
+   ros-humble-joint-state-publisher \
+   ros-humble-joint-state-publisher-gui \
+   ros-humble-robot-state-publisher \
+   ros-humble-rviz2
+   ```
 
-Then build everything else: <br>
+4. Setup workspace:
+
+   ```
+   cd ~/Robotic_Depowdering/src
+   git clone https://github.com/flexivrobotics/flexiv_ros2.git
+   cd flexiv_ros2/
+   git submodule update --init --recursive --progress
+   ```
+
+5. Install dependencies for ```flexiv_ros2``` package:
+
+   ```
+   cd ~/Robotic_Depowdering
+   rosdep update
+   rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+   ```
+6. Choose a directory for installing `flexiv_rdk` library and all its dependencies. For example, a new folder named `rdk_install` under the home directory: `~/rdk_install`. Compile and install to the installation directory:
+
+   ```bash
+   mkdir ~/rdk_install
+   cd ~/Robotic_Depowdering/src/flexiv_ros2/flexiv_hardware/rdk/thirdparty
+   bash build_and_install_dependencies.sh ~/rdk_install
+   ```
+
+7. Configure and install `flexiv_rdk`:
+
+   ```bash
+   cd ~/Robotic_Depowdering/src/flexiv_ros2/flexiv_hardware/rdk
+   mkdir build && cd build
+   cmake .. -DCMAKE_INSTALL_PREFIX=~/rdk_install
+   cmake --build . --target install --config Release
+   ```
+   
+8. Then build everything else: <br>
 ```
-cd <where you cloned this repo>
+cd ~/Robotic_Depowdering
 colcon build --symlink-install
 ```
+
+## Running
 In any terminal where you run code, do: <br>
 ```
 source /opt/ros/humble/setup.sh
 source install/setup.sh
 ```
 
-## Running
 ### VCPD grasping
 #### Pre-process objects
 > [!IMPORTANT]
