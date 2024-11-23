@@ -2,8 +2,8 @@
 
 ## Packages
 - ```flexiv_ros2```: contains the Flexiv ROS2 package and RDK, used for interfacing with, controlling and simulating the Flexiv Rizon 4s.
-- ```gpd```: Grasp Pose Detection, used to detect where to grasp an object.
-  - <b>When adding gpd as a dependency</b>: don't add gpd as a ament package. GPD doesn't support this. Look into ```src/robotic_depowdering/CMakeLists.txt``` to see how you can add gpd to your package.
+- ```vcpd```: VCPD grasp generation library, extended with FEA-based grasp analysis.
+- ```rizon_pick_and_place```: interface to MoveIt! for motion planning and IK.
 - ```robotic_depowdering```: nodes and services used in the depowdering process.
 - ```robotic_depowdering_interfaces```: message and service definitions used by ```robotic_depowdering```.
 ## System requirements
