@@ -15,6 +15,7 @@ from . import grasp_evaluation as grasp_eval
 from ament_index_python.packages import get_package_share_directory
 from .constants import ROBOTIC_DEPOWDERING_TMP_DIR, COLLISION_ANGLE_EPSILON
 import pyvista
+import time
 
 def numpy_arr_to_vec3(vec: np.ndarray) -> Vector3:
     output_vec = Vector3()
@@ -33,6 +34,8 @@ def numpy_arr_to_point(vec: np.ndarray) -> Point:
     
 
 def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDGrasp.Response:
+    t_start = time.time()
+    
     mode = p.GUI if gui else p.DIRECT
     physics_id = p.connect(mode)
     p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, rgbBackground=[1,1,1])
@@ -118,7 +121,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'dist_to_com': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
     prev_vertex = mesh.vertices[0]
-    for i in range(0, num_vertices, 50):
+    for i in range(0, num_vertices, 20):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
         # if np.linalg.norm(vertex - prev_vertex) < 0.015: continue # Skip vertices too close
@@ -248,12 +251,12 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             if verbose: rclpy.node.get_logger(LOGGER_NAME).info("==No Collision, can place fingers, and is force closure: adding to grasp info vector==")
                             feasibles[j] = 1
 
-                            print("Vertex no.:", i)
-                            print("Vertex:", vertex)
-                            print("Vertex normal:", mesh.vertex_normals[i])
-                            print("Face no.: ",selected_faces[j])
-                            print("Width:", widths[j])
-                            x = input()
+                            # print("Vertex no.:", i)
+                            # print("Vertex:", vertex)
+                            # print("Vertex normal:", mesh.vertex_normals[i])
+                            # print("Face no.: ",selected_faces[j])
+                            # print("Width:", widths[j])
+                            # x = input()
                             grasp_info['vertex_ids'].append(i)
                             grasp_info['x_directions'].append(rot_mat[0:3, 0])
                             grasp_info['y_directions'].append(rot_mat[0:3, 1])
@@ -306,6 +309,10 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         grasp_info['quaternions'][closest_to_com_grasp]
     )
     # x = input()
+    t_end = time.time()
+    total_time = t_end - t_start
+    rclpy.node.get_logger(LOGGER_NAME).info('Time taken to generate %d grasps: %f' % (num_pairs, total_time))
+    rclpy.node.get_logger(LOGGER_NAME).info('Time taken per grasp: %f' % (total_time /  num_pairs))
 
     return grasp
 
