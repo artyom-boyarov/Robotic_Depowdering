@@ -9,9 +9,12 @@
 #include "Eigen/Geometry"
 #include "tf2_eigen/tf2_eigen.hpp"
 #include "sensor_msgs/msg/joy.hpp"
-// #include <flexiv/rdk/robot.hpp>
-// #include <flexiv/rdk/gripper.hpp>
-// #include <flexiv/rdk/utility.hpp>
+#include "moveit/move_group_interface/move_group_interface.h"
+#include "moveit_visual_tools/moveit_visual_tools.h"
+#include "moveit/planning_scene_interface/planning_scene_interface.h"
+#include "shape_msgs/msg/mesh.hpp"
+#include "OBJ_Loader.h"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -29,68 +32,23 @@ using std::placeholders::_1;
 using GraspConfiguration = robotic_depowdering_interfaces::srv::VCPDGrasp::Response;
 using GraspRequest = robotic_depowdering_interfaces::srv::VCPDGrasp::Request;
 
+// TODO: Maybe try using visual tools?
 class PickUpObjectNode : public rclcpp::Node
 {
     std::string object;
     Eigen::Vector3d object_position;
     rclcpp::Client<robotic_depowdering_interfaces::srv::VCPDGrasp>::SharedPtr vcpd_client;
 
+    std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
+    std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_;
+    std::shared_ptr<moveit_visual_tools::MoveItVisualTools> moveit_visual_tools_;
+
+    objl::Loader objLoader;
+    shape_msgs::msg::Mesh target_obj_mesh;
+
     bool controlGripper(float grasp_width, float grasp_force = 5.0)
     {
-        // std::string robotSN = "abcdef";
-        // flexiv::rdk::Robot robot(robotSN);
-
-        // // Clear fault on robot server if any
-        // if (robot.fault()) {
-        //     RCLCPP_ERROR(node->get_logger(), "Fault occurred on robot server, trying to clear ...");
-        //     // Try to clear the fault
-        //     if (!robot.ClearFault()) {
-        //         RCLCPP_ERROR(node->get_logger(), "Unable to clear robot fault, exiting");
-        //         return false;
-        //     }
-        //     std::this_thread::sleep_for(std::chrono::seconds(2));
-        //     // Check again
-        //     RCLCPP_INFO(node->get_logger(), "Fault on robot server is cleared");
-        // }
-
-        // // Enable the robot, make sure the E-stop is released before enabling
-        // RCLCPP_INFO(node->get_logger(), "Enabling robot ...");
-        // robot.Enable();
-
-        // // Wait for the robot to become operational
-        // while (!robot.operational()) {
-        //     std::this_thread::sleep_for(std::chrono::seconds(1));
-        // }
-        // RCLCPP_INFO(node->get_logger(), "Robot is now operational");
-
-        // if (robot.mode() == flexiv::rdk::Mode::IDLE) {
-        //     RCLCPP_INFO(node->get_logger(), "Robot is in IDLE mode, switching to NRT_JOINT_POSITION");
-        //     robot.SwitchMode(flexiv::rdk::Mode::NRT_JOINT_POSITION);
-        // }
-
-        // // Gripper Control
-        // // =========================================================================================
-        // // Gripper control is not available if the robot is in IDLE mode, so switch to some mode
-        // // other than IDLE
-        // // Instantiate gripper control interface
-        // flexiv::rdk::Gripper gripper(robot);
-        // RCLCPP_INFO(node->get_logger(), "Initializing gripper, takes ~10 seconds");
-        // gripper.Init();
-
-        // // TODO: avoid constantly re-initializing gripper? But since we only pick
-        // // up one object this needs to only be done once
-        // RCLCPP_INFO(node->get_logger(), "Gripper initialization complete");
-        // RCLCPP_INFO(node->get_logger(), "Closing grip for object");
-        // gripper.Move(grasp_width, 0.02, grasp_force);
-
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
-
-        // RCLCPP_INFO(node->get_logger(), "Opening grip for object");
-        // gripper.Move(0.1, 0.02);
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
-        // RCLCPP_INFO(node->get_logger(), "Stopping gripper");
-        // gripper.Stop();
-
+        // Call Flexiv ROS2 gripper action server.
         return true;
     }
 
@@ -109,11 +67,99 @@ public:
         object_z = this->get_parameter("object_z").as_double();
         object_position = {object_x, object_y, object_z};
 
-        vcpd_client = this->create_client<robotic_depowdering_interfaces::srv::VCPDGrasp>("vcpd_get_grasp");
+        std::string robotic_depowdering_share_dir = ament_index_cpp::get_package_share_directory("robotic_depowdering");
+        if (!objLoader.LoadFile(robotic_depowdering_share_dir + "/test_parts/" + object + ".obj"))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Unable to load OBJ of the object to be picked up");
+        }
+        RCLCPP_INFO(this->get_logger(), "Loaded OBJ mesh of object to pick up: %s. Mesh has %ld meshes", object.c_str(), objLoader.LoadedMeshes.size());
+        // # List of triangles; the index values refer to positions in vertices[].
+        // MeshTriangle[] triangles
+        // # The actual vertices that make up the mesh.
+        // geometry_msgs/Point[] vertices
 
+        uint32_t index_offset = 0;
+        for (size_t mesh_num = 0; mesh_num < objLoader.LoadedMeshes.size(); mesh_num++) {
+            
+            auto loadedObjMesh = objLoader.LoadedMeshes[mesh_num];
+
+            target_obj_mesh.vertices.reserve(
+                target_obj_mesh.vertices.size() +
+                loadedObjMesh.Vertices.size());
+            for (const auto &loadedVertex : loadedObjMesh.Vertices)
+            {
+                geometry_msgs::msg::Point meshVertex;
+                meshVertex.x = loadedVertex.Position.X;
+                meshVertex.y = loadedVertex.Position.Y;
+                meshVertex.z = loadedVertex.Position.Z;
+                target_obj_mesh.vertices.push_back(meshVertex);
+            }
+
+            target_obj_mesh.triangles.reserve(
+                target_obj_mesh.triangles.size() +
+                loadedObjMesh.Indices.size() / 3);
+            for (size_t i = 0; i < loadedObjMesh.Indices.size(); i += 3)
+            {
+                shape_msgs::msg::MeshTriangle meshTri;
+                meshTri.vertex_indices[0] = index_offset + loadedObjMesh.Indices[i];
+                meshTri.vertex_indices[1] = index_offset + loadedObjMesh.Indices[i + 1];
+                meshTri.vertex_indices[2] = index_offset + loadedObjMesh.Indices[i + 2];
+                target_obj_mesh.triangles.push_back(meshTri);
+            }
+            index_offset += loadedObjMesh.Vertices.size();
+        }
+        
+
+        vcpd_client =
+            this->create_client<robotic_depowdering_interfaces::srv::VCPDGrasp>(
+                "vcpd_get_grasp");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized VCPD client");
 
         RCLCPP_INFO(this->get_logger(), "Initialized pick_up_object_node to pick up %s located at <%f, %f, %f>",
                     object.c_str(), object_x, object_y, object_z);
+    }
+
+    void initiailizeMoveIt()
+    {
+
+        move_group_interface_ =
+            std::make_shared<moveit::planning_interface::MoveGroupInterface>(
+                shared_from_this(), "rizon_arm");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized move_group_interface");
+        planning_scene_interface_ =
+            std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
+        // Construct and initialize MoveItVisualTools
+        moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
+            shared_from_this(),
+            "base_link",
+            rviz_visual_tools::RVIZ_MARKER_TOPIC,
+            move_group_interface_->getRobotModel());
+
+        moveit_visual_tools_->deleteAllMarkers();
+        moveit_visual_tools_->loadRemoteControl();
+
+
+        moveit_msgs::msg::CollisionObject collision_object;
+        collision_object.header.frame_id = "world";
+        collision_object.id = "target_obj";
+
+        geometry_msgs::msg::Pose target_obj_pose;
+        target_obj_pose.orientation.w = 1.0;
+        target_obj_pose.position = tf2::toMsg(object_position);
+
+        collision_object.meshes.push_back(target_obj_mesh);
+        collision_object.mesh_poses.push_back(target_obj_pose);
+        collision_object.operation = collision_object.ADD;
+
+        std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
+        collision_objects.push_back(collision_object);
+
+        RCLCPP_INFO(this->get_logger(), "Added the target object to avoid collisions");
+        planning_scene_interface_->applyCollisionObject(collision_object);
+
+        RCLCPP_INFO(this->get_logger(), "Initialized moveit_visual_tools");
     }
 
     void doPickUp()
@@ -128,32 +174,78 @@ public:
         }
 
         auto graspConfiguration = grasp.value();
-
         graspConfiguration->position.x += object_position.x();
         graspConfiguration->position.y += object_position.y();
         graspConfiguration->position.z += object_position.z();
 
-        geometry_msgs::msg::Pose grasp_pose;
-        if (!moveToGraspPose(graspConfiguration, grasp_pose))
+        auto grasp_pose = getGraspPose(graspConfiguration);
+
+        auto grasp_bite_pose = grasp_pose;
+        auto &bite_pose_position = grasp_bite_pose.position;
+
+        bite_pose_position.x -= graspConfiguration->approach.x;
+        bite_pose_position.y -= graspConfiguration->approach.y;
+        bite_pose_position.z -= graspConfiguration->approach.z;
+
+
+        // Set planner to BFMTkConfigDefault
+        // Select object.
+        RCLCPP_INFO(this->get_logger(), "About to begin planning. Set the planner in MotionPlanning->Context->Default to BFMTkConfigDefault and check the target_obj in scene objects");
+
+        // RCLCPP_INFO(this->get_logger(), "Moving to grasp bite pose");
+        // if (!moveToPose(grasp_bite_pose))
+        // {
+        //     RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp bite pose");
+        //     return;
+        // }
+
+        // RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to move to grasp pose");
+        // waitForContinue();
+
+        RCLCPP_INFO(this->get_logger(), "Ready to move to grasp pose. Press continue when ready.");
+        waitForContinue();
+
+        RCLCPP_INFO(this->get_logger(), "Moving to grasp pose");
+        if (!moveToPose(grasp_pose))
         {
             RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp pose");
             return;
         }
+        RCLCPP_INFO(this->get_logger(), "Moved to grasp pose. Press 'Continue' to close gripper");
 
-        RCLCPP_INFO(this->get_logger(), "====Switch the robot to manual mode and close the gripper====");
-        RCLCPP_INFO(this->get_logger(), "Required width: [%3f] Required Force: [%3f]", graspConfiguration->width, graspConfiguration->force);
-        
-        // RCLCPP_INFO(this->get_logger(), "Once you have closed the gripper, press 'continue' in Rviz");
-        
-        // sensor_msgs::msg::Joy rviz_msg;
-        // while (!rclcpp::wait_for_message(rviz_msg, this->shared_from_this(), "/rviz_visual_tools_gui", std::chrono::seconds(5))) {
-        //     RCLCPP_INFO(this->get_logger(), "Waiting for continue to be clicked");
-        // }
+        waitForContinue();
 
-        // doRaise(grasp_pose);
+        RCLCPP_INFO(this->get_logger(), "Closing gripper");
     }
 
-    void doRaise(const geometry_msgs::msg::Pose& grasp_pose) {
+    void waitForContinue()
+    {
+        sensor_msgs::msg::Joy rviz_msg;
+        while (!rclcpp::wait_for_message(rviz_msg, this->shared_from_this(), "/rviz_visual_tools_gui", std::chrono::seconds(5)))
+        {
+            RCLCPP_INFO(this->get_logger(), "Waiting for continue to be clicked");
+        }
+    }
+
+    geometry_msgs::msg::Pose getGraspPose(std::shared_ptr<GraspConfiguration> graspConfiguration)
+    {
+        geometry_msgs::msg::Pose target_pose;
+        target_pose.position = graspConfiguration->position;
+
+        Eigen::Matrix3d rot_mat;
+        rot_mat << graspConfiguration->axis.x, graspConfiguration->binormal.x, graspConfiguration->approach.x,
+            graspConfiguration->axis.y, graspConfiguration->binormal.y, graspConfiguration->approach.y,
+            graspConfiguration->axis.z, graspConfiguration->binormal.z, graspConfiguration->approach.z;
+
+        Eigen::Quaternion<double> rot_q(rot_mat);
+        rot_q.normalize();
+
+        target_pose.orientation = tf2::toMsg(rot_q);
+        return target_pose;
+    }
+
+    void doRaise(const geometry_msgs::msg::Pose &grasp_pose)
+    {
         // if (msg->buttons[2] != 1) return;
         RCLCPP_INFO(this->get_logger(), "Lifting part");
 
@@ -199,68 +291,37 @@ public:
         return {};
     }
 
-    bool moveToGraspPose(std::shared_ptr<GraspConfiguration> graspConfiguration, geometry_msgs::msg::Pose &target_pose)
-    {
-
-        target_pose.position = graspConfiguration->position;
-
-        Eigen::Matrix3d rot_mat;
-        rot_mat << graspConfiguration->axis.x, graspConfiguration->binormal.x, graspConfiguration->approach.x,
-            graspConfiguration->axis.y, graspConfiguration->binormal.y, graspConfiguration->approach.y,
-            graspConfiguration->axis.z, graspConfiguration->binormal.z, graspConfiguration->approach.z;
-
-        Eigen::Quaternion<double> rot_q(rot_mat);
-        rot_q.normalize();
-
-        target_pose.orientation = tf2::toMsg(rot_q);
-
-        return moveToPose(target_pose);
-    }
-
     bool moveToPose(const geometry_msgs::msg::Pose &target_pose)
     {
-        // Move the arm here.
-        // Create a service client to call the move_to_pose service
-        auto client = this->create_client<robotic_depowdering_interfaces::srv::MoveToPose>("move_to_pose");
-        while (!client->wait_for_service(std::chrono::seconds(1)))
-        {
-            if (!rclcpp::ok())
-            {
-                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
-                return false;
-            }
-            RCLCPP_INFO(this->get_logger(), "Waiting for the service to be available...");
-        }
+        RCLCPP_INFO(this->get_logger(), "Moving to pose");
+        // Set the target pose
+        move_group_interface_->setPoseTarget(target_pose);
 
-        auto request = std::make_shared<robotic_depowdering_interfaces::srv::MoveToPose::Request>();
-        request->target_pose = target_pose;
-        RCLCPP_INFO(this->get_logger(), "Begin request to move to pose with position <%f, %f, %f>",
-                    target_pose.position.x,
-                    target_pose.position.y,
-                    target_pose.position.z);
-
-        auto result = client->async_send_request(request);
-        if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS)
+        auto const [success, plan] = [&move_group_interface = move_group_interface_]
         {
-            if (result.get()->success)
+            moveit::planning_interface::MoveGroupInterface::Plan move_plan;
+            auto const ok = static_cast<bool>(move_group_interface->plan(move_plan));
+            return std::make_pair(ok, move_plan);
+        }();
+
+        if (success)
+        {
+            RCLCPP_INFO(this->get_logger(), "Planning succeeded, executing trajectory");
+
+            auto const ok = static_cast<bool>(move_group_interface_->execute(plan));
+            if (!ok)
             {
-                RCLCPP_INFO(this->get_logger(), "Successfully moved to target pose.");
-            }
-            else
-            {
-                RCLCPP_ERROR(this->get_logger(), "Failed to move to target pose.");
+                RCLCPP_ERROR(this->get_logger(), "Failed to execute trajectory");
                 return false;
             }
         }
         else
         {
-            RCLCPP_ERROR(this->get_logger(), "Failed to call service move_to_pose");
+            RCLCPP_ERROR(this->get_logger(), "Planning and execution failed.");
             return false;
         }
         return true;
     }
-
-
 };
 
 std::shared_ptr<rclcpp::Node> node;
@@ -272,6 +333,7 @@ int main(int argc, char **argv)
 
     rclcpp::init(argc, argv);
     std::shared_ptr<PickUpObjectNode> node = std::make_shared<PickUpObjectNode>();
+    node->initiailizeMoveIt();
     node->doPickUp();
 
     rclcpp::shutdown();

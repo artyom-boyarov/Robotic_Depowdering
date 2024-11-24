@@ -23,7 +23,10 @@ find_package(builtin_interfaces REQUIRED)
 find_package(rizon_pick_and_place REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(moveit_visual_tools REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 
 include_directories(include ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -46,20 +49,14 @@ ament_target_dependencies(server rclcpp example_interfaces)
 add_executable(client src/add_two_ints_client.cpp)
 ament_target_dependencies(client rclcpp example_interfaces)
 
-# add_executable(gripper_test src/gripper_test.cpp)
-# ament_target_dependencies(gripper_test rclcpp)
-# # Since the Flexiv RDK isn't available as an ament package, we include it like this:
-# # NOTE: Disable the gripper test since there are some issues with the new RDK version.
-# target_link_libraries(gripper_test flexiv_rdk.x86_64-linux-gnu)
-# target_link_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/lib)
-# target_include_directories(gripper_test PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/include)
-
 add_executable(pick_up_object src/pick_up_object.cpp)
 ament_target_dependencies(
   pick_up_object 
   rizon_pick_and_place 
   rclcpp 
   robotic_depowdering_interfaces 
+  moveit_ros_planning_interface
+  moveit_visual_tools
   trajectory_msgs 
   builtin_interfaces 
   tf2 
@@ -67,8 +64,24 @@ ament_target_dependencies(
   tf2_eigen 
   Eigen3 
   sensor_msgs
+  shape_msgs
+  ament_index_cpp
 )
 
+add_executable(move_to_pose_service src/move_to_pose_service.cpp)
+target_include_directories(move_to_pose_service PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+  
+target_compile_features(move_to_pose_service PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(
+  move_to_pose_service
+  "moveit_ros_planning_interface"
+  "rclcpp"
+  "moveit_visual_tools"
+  "geometry_msgs"
+  "robotic_depowdering_interfaces"
+)
 # target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib)
 target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/include)
 # target_link_directories(pick_up_object PRIVATE ~/Robotic_depowdering/build/flexiv_rdk/lib)
@@ -78,12 +91,12 @@ install( TARGETS
   server
   client
   pick_up_object
-  # gripper_test
+  move_to_pose_service
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
-  DIRECTORY cfg test_parts launch
+  DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

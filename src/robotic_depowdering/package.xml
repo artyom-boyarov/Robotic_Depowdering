@@ -22,6 +22,8 @@
   <depend>rizon_pick_and_place</depend>
   <depend>moveit_core</depend>
   <depend>moveit_ros_planning</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>shape_msgs</depend>
   <depend>rviz_visual_tools</depend>
 
   <build_depend>moveit_common</build_depend>

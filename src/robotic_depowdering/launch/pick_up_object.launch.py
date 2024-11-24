@@ -167,12 +167,19 @@ def generate_launch_description():
         )
     )
 
+    # move_to_pose_service_node = Node(
+    #     package="robotic_depowdering",
+    #     executable="move_to_pose_service"
+    # )
+    
+
 
     nodes = [
         publish_clear_rviz_cmd,
         delay_publish_object,
         delay_pick_up_object,
         vcpd_service,
+        # move_to_pose_service_node,
         RegisterEventHandler(
             OnProcessExit(
                 target_action=pick_up_object,
