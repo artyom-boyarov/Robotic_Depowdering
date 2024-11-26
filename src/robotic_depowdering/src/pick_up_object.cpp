@@ -141,23 +141,40 @@ public:
         moveit_visual_tools_->loadRemoteControl();
 
 
-        moveit_msgs::msg::CollisionObject collision_object;
-        collision_object.header.frame_id = "world";
-        collision_object.id = "target_obj";
+        moveit_msgs::msg::CollisionObject target_obj_collision;
+        target_obj_collision.header.frame_id = "world";
+        target_obj_collision.id = "target_obj";
 
         geometry_msgs::msg::Pose target_obj_pose;
         target_obj_pose.orientation.w = 1.0;
         target_obj_pose.position = tf2::toMsg(object_position);
 
-        collision_object.meshes.push_back(target_obj_mesh);
-        collision_object.mesh_poses.push_back(target_obj_pose);
-        collision_object.operation = collision_object.ADD;
+        target_obj_collision.meshes.push_back(target_obj_mesh);
+        target_obj_collision.mesh_poses.push_back(target_obj_pose);
+        target_obj_collision.operation = target_obj_collision.ADD;
 
-        std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
-        collision_objects.push_back(collision_object);
+        moveit_msgs::msg::CollisionObject floor_collision;
+        shape_msgs::msg::SolidPrimitive floor_box;
+        floor_box.type = floor_box.BOX;
+        floor_box.dimensions.resize(3);
+        floor_box.dimensions[floor_box.BOX_X] = 0.1;
+        floor_box.dimensions[floor_box.BOX_Y] = 2;
+        floor_box.dimensions[floor_box.BOX_Z] = 2;
+
+        geometry_msgs::msg::Pose floor_pose;
+        target_obj_pose.orientation.w = 1.0;
+        target_obj_pose.position.x = 0.0;
+        target_obj_pose.position.y = 0.0;
+        target_obj_pose.position.z = -0.05;
+
+        floor_collision.primitives.push_back(floor_box);
+        floor_collision.primitive_poses.push_back(floor_pose);
+        floor_collision.operation = floor_collision.ADD;
 
         RCLCPP_INFO(this->get_logger(), "Added the target object to avoid collisions");
-        planning_scene_interface_->applyCollisionObject(collision_object);
+        planning_scene_interface_->applyCollisionObject(target_obj_collision);
+        RCLCPP_INFO(this->get_logger(), "Added the floor object to avoid collisions");
+        planning_scene_interface_->applyCollisionObject(floor_collision);
 
         RCLCPP_INFO(this->get_logger(), "Initialized moveit_visual_tools");
     }
@@ -183,9 +200,9 @@ public:
         auto grasp_bite_pose = grasp_pose;
         auto &bite_pose_position = grasp_bite_pose.position;
 
-        bite_pose_position.x -= graspConfiguration->approach.x;
-        bite_pose_position.y -= graspConfiguration->approach.y;
-        bite_pose_position.z -= graspConfiguration->approach.z;
+        bite_pose_position.x -= 0.1 * graspConfiguration->approach.x;
+        bite_pose_position.y -= 0.1 * graspConfiguration->approach.y;
+        bite_pose_position.z -= 0.1 * graspConfiguration->approach.z;
 
 
         // Set planner to BFMTkConfigDefault

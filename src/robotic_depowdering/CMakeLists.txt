@@ -96,7 +96,7 @@ install( TARGETS
 )
 
 install(
-  DIRECTORY launch
+  DIRECTORY launch test_parts remeshed_test_parts
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

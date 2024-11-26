@@ -12,11 +12,13 @@ import rclpy.node
 from robotic_depowdering_interfaces.srv import VCPDGrasp
 from geometry_msgs.msg import Point, Vector3
 from . import grasp_evaluation as grasp_eval
+from . import fenics_grasp_calc as fea
 from ament_index_python.packages import get_package_share_directory
 from .constants import ROBOTIC_DEPOWDERING_TMP_DIR, COLLISION_ANGLE_EPSILON
 import pyvista
 import time
 
+DISPLACEMENT_THRESHOLD = 0.00001
 def numpy_arr_to_vec3(vec: np.ndarray) -> Vector3:
     output_vec = Vector3()
     output_vec.x = vec[0]
@@ -42,9 +44,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     p.resetDebugVisualizerCamera(cameraDistance=0.57, cameraYaw=0, cameraPitch=-70, cameraTargetPosition=[0, 0, 0])
     p.setGravity(0, 0, -9.8)
 
+    fea_tester = fea.FEAGraspTester()
     
-    
-
     vcpd_package_share_dir = get_package_share_directory('vcpd')
     robotic_depowdering_package_share_dir = get_package_share_directory('robotic_depowdering')
 
@@ -73,7 +74,9 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     x_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0.2,0,0], lineColorRGB=[1, 0,0], lifeTime=0, lineWidth=4.0)
     y_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0.2,0], lineColorRGB=[1, 1,0], lifeTime=0, lineWidth=4.0)
     z_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0,0.2], lineColorRGB=[0, 1,0], lifeTime=0, lineWidth=4.0)
-
+    
+    fea_tester.re_mesh_object(obj_name, robotic_depowdering_package_share_dir + "/test_parts/",
+                              robotic_depowdering_package_share_dir + "/remeshed_test_parts/")
 
     # TODO: When we get the updated flexiv library, get this to point to the
     # meshes in robotic_depowdering
@@ -81,7 +84,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     
     rclpy.node.get_logger(LOGGER_NAME).info("Calculating grasps for: %s " % (obj_name))
 
-    obj_path = os.path.join(mesh_path, obj_name, obj_name+'.obj')
+
+    obj_path = os.path.join(robotic_depowdering_package_share_dir, "remeshed_test_parts", obj_name+'.fenics_surf_mesh.obj')
 
     mesh = pyvista.read(obj_path)
     mesh.compute_normals(inplace=True, auto_orient_normals=True)
@@ -118,7 +122,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'widths': [],
                     'quaternions': [],
                     'minimum_force': [],
-                    'dist_to_com': []}
+                    'dist_to_com': [],
+                    'displacement': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
     prev_vertex = mesh.vertices[0]
     for i in range(0, num_vertices, 20):
@@ -245,9 +250,10 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
 
                         if not grasp_geometry.found: continue
                         is_force_closure = grasp_eval.is_force_closure(grasp_geometry)
-                        
+                        displacement = fea_tester.find_grasp_displacement(np.array([selected_faces[j]]), np.array([i]), np.array([mesh.vertex_normals[i]]) )
+                            
                         if (not rg.is_collided([])) and \
-                            grasp_geometry.found and is_force_closure:
+                            grasp_geometry.found and is_force_closure and displacement < DISPLACEMENT_THRESHOLD:
                             if verbose: rclpy.node.get_logger(LOGGER_NAME).info("==No Collision, can place fingers, and is force closure: adding to grasp info vector==")
                             feasibles[j] = 1
 
@@ -270,6 +276,9 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             grasp_info['minimum_force'].append(grasp_eval.get_minimum_force_friction(rot_mat[0:3, 1], 0.75, obj_mass))
                             grasp_info['dist_to_com'].append(np.linalg.norm(centers[j] - obj_center_of_mass))
 
+                            grasp_info['displacement'].append(displacement)
+                            # print(displacement[0])
+
                     quats[j] = quat[0]
 
     num_pairs = len(grasp_info['vertex_ids'])
@@ -284,31 +293,51 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
         shutil.rmtree(os.path.join(mesh_path, obj_name))
         return grasp
 
-    # Analyze the grasps here!
-    # Call Alex's linear elastic model interface here
-    # Do by closest to COM
+    # print('Safest by displacement')
+    # safest_grasp = np.argmin(grasp_info['displacement'])
+    # grasp.found_grasp = True
+    # grasp.axis = numpy_arr_to_vec3(grasp_info['x_directions'][safest_grasp])
+    # grasp.binormal = numpy_arr_to_vec3(grasp_info['y_directions'][safest_grasp])
+    # grasp.approach = numpy_arr_to_vec3(grasp_info['z_directions'][safest_grasp])
+    # grasp.position = numpy_arr_to_point(grasp_info['base_pos'][safest_grasp])
+    # grasp.width = grasp_info['widths'][safest_grasp]
+    # grasp.force = (grasp_info['minimum_force'][safest_grasp]) * 1.2 # 20% leniency
 
-    closest_to_com_grasp = np.argmin(grasp_info['dist_to_com'])
+    # rclpy.node.get_logger(LOGGER_NAME).info("Returning grasp for %s with base position at <%f, %f, %f> and width %f" %
+    #     (obj_name, grasp.position.x, grasp.position.y, grasp.position.z, grasp.width))
+    
+    # rg.place_fingers(
+    #     grasp_info['widths'][safest_grasp], 
+    #     grasp_info['centers'][safest_grasp], 
+    #     grasp_info['x_directions'][safest_grasp], 
+    #     grasp_info['y_directions'][safest_grasp], 
+    #     grasp_info['z_directions'][safest_grasp], 
+    #     grasp_info['quaternions'][safest_grasp]
+    # )
+
+    # x = input()
+    # Do threshold + COM
+    print('Safest by distance to COM')
+    safest_grasp = np.argmin(grasp_info['dist_to_com'])
     grasp.found_grasp = True
-    grasp.axis = numpy_arr_to_vec3(grasp_info['x_directions'][closest_to_com_grasp])
-    grasp.binormal = numpy_arr_to_vec3(grasp_info['y_directions'][closest_to_com_grasp])
-    grasp.approach = numpy_arr_to_vec3(grasp_info['z_directions'][closest_to_com_grasp])
-    grasp.position = numpy_arr_to_point(grasp_info['base_pos'][closest_to_com_grasp])
-    grasp.width = grasp_info['widths'][closest_to_com_grasp]
-    grasp.force = (grasp_info['minimum_force'][closest_to_com_grasp]) * 1.2 # 20% leniency
+    grasp.axis = numpy_arr_to_vec3(grasp_info['x_directions'][safest_grasp])
+    grasp.binormal = numpy_arr_to_vec3(grasp_info['y_directions'][safest_grasp])
+    grasp.approach = numpy_arr_to_vec3(grasp_info['z_directions'][safest_grasp])
+    grasp.position = numpy_arr_to_point(grasp_info['base_pos'][safest_grasp])
+    grasp.width = grasp_info['widths'][safest_grasp]
+    grasp.force = (grasp_info['minimum_force'][safest_grasp]) * 1.2 # 20% leniency
 
     rclpy.node.get_logger(LOGGER_NAME).info("Returning grasp for %s with base position at <%f, %f, %f> and width %f" %
         (obj_name, grasp.position.x, grasp.position.y, grasp.position.z, grasp.width))
     
     rg.place_fingers(
-        grasp_info['widths'][closest_to_com_grasp], 
-        grasp_info['centers'][closest_to_com_grasp], 
-        grasp_info['x_directions'][closest_to_com_grasp], 
-        grasp_info['y_directions'][closest_to_com_grasp], 
-        grasp_info['z_directions'][closest_to_com_grasp], 
-        grasp_info['quaternions'][closest_to_com_grasp]
+        grasp_info['widths'][safest_grasp], 
+        grasp_info['centers'][safest_grasp], 
+        grasp_info['x_directions'][safest_grasp], 
+        grasp_info['y_directions'][safest_grasp], 
+        grasp_info['z_directions'][safest_grasp], 
+        grasp_info['quaternions'][safest_grasp]
     )
-    # x = input()
     t_end = time.time()
     total_time = t_end - t_start
     rclpy.node.get_logger(LOGGER_NAME).info('Time taken to generate %d grasps: %f' % (num_pairs, total_time))
