@@ -93,9 +93,13 @@ public:
             std::make_shared<moveit::planning_interface::MoveGroupInterface>(
                 shared_from_this(), "rizon_arm");
 
+        move_group_interface_->setNumPlanningAttempts(10);
+        move_group_interface_->setPlanningTime(5.0);
+
         RCLCPP_INFO(this->get_logger(), "Initialized move_group_interface");
         planning_scene_interface_ =
             std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
+
         // Construct and initialize MoveItVisualTools
         moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
             shared_from_this(),
@@ -240,7 +244,6 @@ public:
         // Offset raised pose
         raised_pose_position.z += 0.2; // Raise by 20 cm
 
-
         RCLCPP_INFO(this->get_logger(), "About to begin planning. Set the planner in MotionPlanning->Context->Default to BFMTkConfigDefault and check the target_obj in scene objects.");
         RCLCPP_INFO(this->get_logger(), "Once complete, click Continue to move to grasp bite pose.");
         waitForContinue();
@@ -255,11 +258,8 @@ public:
         RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to move to grasp pose.");
         waitForContinue();
 
-        // Plan without target object collisions.
-        removeTargetObjectCollisionObject();
-
         RCLCPP_INFO(this->get_logger(), "Moving to grasp pose.");
-        if (!moveToPose(grasp_pose))
+        if (!moveBetweenPoses(grasp_bite_pose, grasp_pose))
         {
             RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp pose.");
             return;
@@ -275,8 +275,11 @@ public:
             return;
         }
 
+        RCLCPP_INFO(this->get_logger(), "Closed gripper. Press 'Continue' to raise object.");
+        waitForContinue();
+
         RCLCPP_INFO(this->get_logger(), "Moving to raised pose.");
-        if (!moveToPose(grasp_raised_pose))
+        if (!moveBetweenPoses(grasp_pose, grasp_raised_pose))
         {
             RCLCPP_ERROR(this->get_logger(), "Failed to move to raised pose.");
             return;
@@ -291,6 +294,26 @@ public:
             return;
         }
         RCLCPP_INFO(this->get_logger(), "Opened gripper. Exiting.");
+    }
+
+    bool moveBetweenPoses(geometry_msgs::msg::Pose &p1, geometry_msgs::msg::Pose &p2)
+    {
+        moveit_msgs::msg::RobotTrajectory computed_trajectory;
+        double path_percent = move_group_interface_->computeCartesianPath({p1, p2}, 0.01, 10.0, computed_trajectory, false);
+        if (path_percent < 0.0) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to compute cartesian path");
+            return false;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Computed Cartesian path (%.2f%% achieved)", path_percent * 100.0);
+        auto const ok = static_cast<bool>(move_group_interface_->execute(computed_trajectory));
+        if (!ok)
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to execute trajectory");
+            return false;
+        }
+        RCLCPP_INFO(this->get_logger(), "Computed Cartesian path successfully executed");
+        return true;
     }
 
     void waitForContinue()
