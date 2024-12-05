@@ -46,9 +46,17 @@ class PickUpObjectNode : public rclcpp::Node
     objl::Loader objLoader;
     shape_msgs::msg::Mesh target_obj_mesh;
 
-    bool controlGripper(float grasp_width, float grasp_force = 5.0)
+    moveit_msgs::msg::CollisionObject target_obj_collision;
+    moveit_msgs::msg::CollisionObject floor_collision;
+
+    bool controlGripperForce(float grasp_force = 10.0)
     {
         // Call Flexiv ROS2 gripper action server.
+        return true;
+    }
+
+    bool controlGripperWidth(float grasp_width = 10.0)
+    {
         return true;
     }
 
@@ -67,6 +75,41 @@ public:
         object_z = this->get_parameter("object_z").as_double();
         object_position = {object_x, object_y, object_z};
 
+        loadTargetObjectMesh();
+
+        vcpd_client =
+            this->create_client<robotic_depowdering_interfaces::srv::VCPDGrasp>(
+                "vcpd_get_grasp");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized VCPD client");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized pick_up_object_node to pick up %s located at <%f, %f, %f>",
+                    object.c_str(), object_x, object_y, object_z);
+    }
+
+    void initiailizeMoveIt()
+    {
+        move_group_interface_ =
+            std::make_shared<moveit::planning_interface::MoveGroupInterface>(
+                shared_from_this(), "rizon_arm");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized move_group_interface");
+        planning_scene_interface_ =
+            std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
+        // Construct and initialize MoveItVisualTools
+        moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
+            shared_from_this(),
+            "base_link",
+            rviz_visual_tools::RVIZ_MARKER_TOPIC,
+            move_group_interface_->getRobotModel());
+
+        moveit_visual_tools_->deleteAllMarkers();
+        moveit_visual_tools_->loadRemoteControl();
+        RCLCPP_INFO(this->get_logger(), "Initialized moveit_visual_tools");
+    }
+
+    void loadTargetObjectMesh()
+    {
         std::string robotic_depowdering_share_dir = ament_index_cpp::get_package_share_directory("robotic_depowdering");
         if (!objLoader.LoadFile(robotic_depowdering_share_dir + "/test_parts/" + object + ".obj"))
         {
@@ -79,8 +122,8 @@ public:
         // geometry_msgs/Point[] vertices
 
         uint32_t index_offset = 0;
-        for (size_t mesh_num = 0; mesh_num < objLoader.LoadedMeshes.size(); mesh_num++) {
-            
+        for (size_t mesh_num = 0; mesh_num < objLoader.LoadedMeshes.size(); mesh_num++)
+        {
             auto loadedObjMesh = objLoader.LoadedMeshes[mesh_num];
 
             target_obj_mesh.vertices.reserve(
@@ -108,40 +151,11 @@ public:
             }
             index_offset += loadedObjMesh.Vertices.size();
         }
-        
-
-        vcpd_client =
-            this->create_client<robotic_depowdering_interfaces::srv::VCPDGrasp>(
-                "vcpd_get_grasp");
-
-        RCLCPP_INFO(this->get_logger(), "Initialized VCPD client");
-
-        RCLCPP_INFO(this->get_logger(), "Initialized pick_up_object_node to pick up %s located at <%f, %f, %f>",
-                    object.c_str(), object_x, object_y, object_z);
     }
 
-    void initiailizeMoveIt()
+    void addTargetObjectCollisionObject()
     {
 
-        move_group_interface_ =
-            std::make_shared<moveit::planning_interface::MoveGroupInterface>(
-                shared_from_this(), "rizon_arm");
-
-        RCLCPP_INFO(this->get_logger(), "Initialized move_group_interface");
-        planning_scene_interface_ =
-            std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
-        // Construct and initialize MoveItVisualTools
-        moveit_visual_tools_ = std::make_shared<moveit_visual_tools::MoveItVisualTools>(
-            shared_from_this(),
-            "base_link",
-            rviz_visual_tools::RVIZ_MARKER_TOPIC,
-            move_group_interface_->getRobotModel());
-
-        moveit_visual_tools_->deleteAllMarkers();
-        moveit_visual_tools_->loadRemoteControl();
-
-
-        moveit_msgs::msg::CollisionObject target_obj_collision;
         target_obj_collision.header.frame_id = "world";
         target_obj_collision.id = "target_obj";
 
@@ -153,7 +167,19 @@ public:
         target_obj_collision.mesh_poses.push_back(target_obj_pose);
         target_obj_collision.operation = target_obj_collision.ADD;
 
-        moveit_msgs::msg::CollisionObject floor_collision;
+        RCLCPP_INFO(this->get_logger(), "Added the target object to avoid collisions");
+        planning_scene_interface_->applyCollisionObject(target_obj_collision);
+    }
+
+    void removeTargetObjectCollisionObject()
+    {
+        target_obj_collision.operation = target_obj_collision.REMOVE;
+        RCLCPP_INFO(this->get_logger(), "Removed the target object");
+        planning_scene_interface_->applyCollisionObject(target_obj_collision);
+    }
+
+    void addFloorCollisionObject()
+    {
         shape_msgs::msg::SolidPrimitive floor_box;
         floor_box.type = floor_box.BOX;
         floor_box.dimensions.resize(3);
@@ -162,25 +188,26 @@ public:
         floor_box.dimensions[floor_box.BOX_Z] = 2;
 
         geometry_msgs::msg::Pose floor_pose;
-        target_obj_pose.orientation.w = 1.0;
-        target_obj_pose.position.x = 0.0;
-        target_obj_pose.position.y = 0.0;
-        target_obj_pose.position.z = -0.05;
+        floor_pose.orientation.w = 1.0;
+        floor_pose.position.x = 0.0;
+        floor_pose.position.y = 0.0;
+        floor_pose.position.z = -0.05;
 
         floor_collision.primitives.push_back(floor_box);
         floor_collision.primitive_poses.push_back(floor_pose);
         floor_collision.operation = floor_collision.ADD;
 
-        RCLCPP_INFO(this->get_logger(), "Added the target object to avoid collisions");
-        planning_scene_interface_->applyCollisionObject(target_obj_collision);
         RCLCPP_INFO(this->get_logger(), "Added the floor object to avoid collisions");
         planning_scene_interface_->applyCollisionObject(floor_collision);
-
-        RCLCPP_INFO(this->get_logger(), "Initialized moveit_visual_tools");
     }
 
     void doPickUp()
     {
+        // Initialize MoveIt.
+        initiailizeMoveIt();
+        // Add collision objects.
+        addTargetObjectCollisionObject();
+        addFloorCollisionObject();
 
         std::optional<std::shared_ptr<GraspConfiguration>> grasp = getGrasp();
 
@@ -191,48 +218,79 @@ public:
         }
 
         auto graspConfiguration = grasp.value();
+        // Offset grasp for object position
         graspConfiguration->position.x += object_position.x();
         graspConfiguration->position.y += object_position.y();
         graspConfiguration->position.z += object_position.z();
 
-        auto grasp_pose = getGraspPose(graspConfiguration);
+        // Convert to Pose msg
+        geometry_msgs::msg::Pose grasp_pose = getGraspPose(graspConfiguration);
 
         auto grasp_bite_pose = grasp_pose;
         auto &bite_pose_position = grasp_bite_pose.position;
 
+        // Offset bite position
         bite_pose_position.x -= 0.1 * graspConfiguration->approach.x;
         bite_pose_position.y -= 0.1 * graspConfiguration->approach.y;
         bite_pose_position.z -= 0.1 * graspConfiguration->approach.z;
 
+        auto grasp_raised_pose = grasp_pose;
+        auto &raised_pose_position = grasp_raised_pose.position;
 
-        // Set planner to BFMTkConfigDefault
-        // Select object.
-        RCLCPP_INFO(this->get_logger(), "About to begin planning. Set the planner in MotionPlanning->Context->Default to BFMTkConfigDefault and check the target_obj in scene objects");
+        // Offset raised pose
+        raised_pose_position.z += 0.2; // Raise by 20 cm
 
-        // RCLCPP_INFO(this->get_logger(), "Moving to grasp bite pose");
-        // if (!moveToPose(grasp_bite_pose))
-        // {
-        //     RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp bite pose");
-        //     return;
-        // }
 
-        // RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to move to grasp pose");
-        // waitForContinue();
-
-        RCLCPP_INFO(this->get_logger(), "Ready to move to grasp pose. Press continue when ready.");
+        RCLCPP_INFO(this->get_logger(), "About to begin planning. Set the planner in MotionPlanning->Context->Default to BFMTkConfigDefault and check the target_obj in scene objects.");
+        RCLCPP_INFO(this->get_logger(), "Once complete, click Continue to move to grasp bite pose.");
         waitForContinue();
 
-        RCLCPP_INFO(this->get_logger(), "Moving to grasp pose");
-        if (!moveToPose(grasp_pose))
+        RCLCPP_INFO(this->get_logger(), "Moving to grasp bite pose.");
+        if (!moveToPose(grasp_bite_pose))
         {
-            RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp pose");
+            RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp bite pose.");
             return;
         }
-        RCLCPP_INFO(this->get_logger(), "Moved to grasp pose. Press 'Continue' to close gripper");
+
+        RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to move to grasp pose.");
+        waitForContinue();
+
+        // Plan without target object collisions.
+        removeTargetObjectCollisionObject();
+
+        RCLCPP_INFO(this->get_logger(), "Moving to grasp pose.");
+        if (!moveToPose(grasp_pose))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to move to grasp pose.");
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Moved to grasp pose. Press 'Continue' to close gripper.");
 
         waitForContinue();
 
         RCLCPP_INFO(this->get_logger(), "Closing gripper");
+        if (!controlGripperForce(10.0))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to close gripper.");
+            return;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Moving to raised pose.");
+        if (!moveToPose(grasp_raised_pose))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to move to raised pose.");
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Moved to raised pose. Press 'Continue' to open gripper and release the object.");
+        waitForContinue();
+
+        RCLCPP_INFO(this->get_logger(), "Opening gripper");
+        if (!controlGripperWidth(graspConfiguration->width * 1.1))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to open gripper.");
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Opened gripper. Exiting.");
     }
 
     void waitForContinue()
@@ -350,9 +408,7 @@ int main(int argc, char **argv)
 
     rclcpp::init(argc, argv);
     std::shared_ptr<PickUpObjectNode> node = std::make_shared<PickUpObjectNode>();
-    node->initiailizeMoveIt();
     node->doPickUp();
-
     rclcpp::shutdown();
 
     return 0;
