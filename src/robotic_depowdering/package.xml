@@ -25,6 +25,7 @@
   <depend>moveit_ros_planning_interface</depend>
   <depend>shape_msgs</depend>
   <depend>rviz_visual_tools</depend>
+  <depend>flexiv_msgs</depend>
 
   <build_depend>moveit_common</build_depend>
 

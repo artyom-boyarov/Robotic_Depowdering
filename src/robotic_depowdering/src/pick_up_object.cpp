@@ -1,5 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/wait_for_message.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 #include "builtin_interfaces/msg/duration.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
@@ -15,6 +16,8 @@
 #include "shape_msgs/msg/mesh.hpp"
 #include "OBJ_Loader.h"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include "flexiv_msgs/action/move.hpp"
+#include "flexiv_msgs/action/grasp.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -23,9 +26,7 @@
 #include <thread>
 #include <string>
 #include <optional>
-#include <stdio.h>
-#include <unistd.h>
-#include <termios.h>
+#include <functional>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -38,6 +39,13 @@ class PickUpObjectNode : public rclcpp::Node
     std::string object;
     Eigen::Vector3d object_position;
     rclcpp::Client<robotic_depowdering_interfaces::srv::VCPDGrasp>::SharedPtr vcpd_client;
+
+    using ForceAction = flexiv_msgs::action::Grasp;
+    using MoveAction = flexiv_msgs::action::Move;
+    rclcpp_action::Client<MoveAction>::SharedPtr move_gripper_client_ptr;
+    rclcpp_action::Client<ForceAction>::SharedPtr force_gripper_client_ptr;
+    using ForceGoalHandle = rclcpp_action::ClientGoalHandle<ForceAction>;
+    using MoveGoalHandle = rclcpp_action::ClientGoalHandle<MoveAction>;
 
     std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_;
     std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_;
@@ -82,6 +90,22 @@ public:
                 "vcpd_get_grasp");
 
         RCLCPP_INFO(this->get_logger(), "Initialized VCPD client");
+
+        move_gripper_client_ptr = rclcpp_action::create_client<MoveAction>(
+            this->get_node_base_interface(),
+            this->get_node_graph_interface(),
+            this->get_node_logging_interface(),
+            this->get_node_waitables_interface(),
+            "move_gripper");
+
+        force_gripper_client_ptr = rclcpp_action::create_client<ForceAction>(
+            this->get_node_base_interface(),
+            this->get_node_graph_interface(),
+            this->get_node_logging_interface(),
+            this->get_node_waitables_interface(),
+            "force_gripper");
+
+        RCLCPP_INFO(this->get_logger(), "Initialized Flexiv Gripper action clients");
 
         RCLCPP_INFO(this->get_logger(), "Initialized pick_up_object_node to pick up %s located at <%f, %f, %f>",
                     object.c_str(), object_x, object_y, object_z);
@@ -300,7 +324,8 @@ public:
     {
         moveit_msgs::msg::RobotTrajectory computed_trajectory;
         double path_percent = move_group_interface_->computeCartesianPath({p1, p2}, 0.01, 10.0, computed_trajectory, false);
-        if (path_percent < 0.0) {
+        if (path_percent < 0.0)
+        {
             RCLCPP_ERROR(this->get_logger(), "Failed to compute cartesian path");
             return false;
         }
@@ -420,6 +445,117 @@ public:
         }
         return true;
     }
+
+    void move_goal_response_cb(MoveGoalHandle::SharedPtr goal_handle)
+    {
+        if (!goal_handle)
+        {
+            RCLCPP_ERROR(this->get_logger(), "Gripper move goal was rejected by server");
+        }
+        else
+        {
+            RCLCPP_INFO(this->get_logger(), "Gripper move goal accepted by server, waiting for result");
+        }
+    }
+
+    void force_goal_response_cb(ForceGoalHandle::SharedPtr goal_handle)
+    {
+        if (!goal_handle)
+        {
+            RCLCPP_ERROR(this->get_logger(), "Gripper move goal was rejected by server");
+        }
+        else
+        {
+            RCLCPP_INFO(this->get_logger(), "Gripper move goal accepted by server, waiting for result");
+        }
+    }
+
+    void move_feedback_cb(MoveGoalHandle::SharedPtr goal_handle, const std::shared_ptr<const MoveAction::Feedback> feedback)
+    {
+        RCLCPP_INFO(this->get_logger(), "Closed gripper to force %f and width %f", feedback->current_width, feedback->current_force);
+            
+    }
+
+    void force_goal_feedback_cb(ForceGoalHandle::SharedPtr goal_handle, const std::shared_ptr<const ForceAction::Feedback> feedback)
+    {
+        RCLCPP_INFO(this->get_logger(), "Closed gripper to force %f and width %f", feedback->current_width, feedback->current_force);
+    }
+
+    void move_result_cb(const MoveGoalHandle::WrappedResult &result)
+    {
+        switch (result.code)
+        {
+        case rclcpp_action::ResultCode::SUCCEEDED:
+            break;
+        case rclcpp_action::ResultCode::ABORTED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+            return;
+        case rclcpp_action::ResultCode::CANCELED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+            return;
+        default:
+            RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+            return;
+        }
+        if (result.result->success) {
+            after_gripper_test(); // TODO: Change
+        }
+
+    }
+
+    void force_result_cb(const ForceGoalHandle::WrappedResult &result)
+    {
+        switch (result.code)
+        {
+        case rclcpp_action::ResultCode::SUCCEEDED:
+            break;
+        case rclcpp_action::ResultCode::ABORTED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+            return;
+        case rclcpp_action::ResultCode::CANCELED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+            return;
+        default:
+            RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+            return;
+        }
+        if (result.result->success) {
+            after_gripper_test(); // TODO: Change
+        }
+    }
+
+    void test_gripper() {
+        if (!move_gripper_client_ptr) {
+            RCLCPP_ERROR(this->get_logger(), "Move gripper client not initialized");
+        }
+
+        if (!move_gripper_client_ptr->wait_for_action_server(10s)) {
+            RCLCPP_ERROR(this->get_logger(), "Action server not available after waiting");
+        }
+
+        auto goal_msg = MoveAction::Goal();
+
+        goal_msg.width = 0.1;
+        goal_msg.velocity = 0.02;
+        goal_msg.max_force = 1.0;
+
+        RCLCPP_INFO(this->get_logger(), "Sending goal");
+
+        using namespace std::placeholders;
+        auto send_goal_options = rclcpp_action::Client<MoveAction>::SendGoalOptions();
+        send_goal_options.goal_response_callback = 
+            std::bind(&PickUpObjectNode::move_goal_response_cb, this, _1);
+        send_goal_options.feedback_callback = 
+            std::bind(&PickUpObjectNode::move_feedback_cb, this, _1, _2);
+        send_goal_options.result_callback = 
+            std::bind(&PickUpObjectNode::move_result_cb, this, _1);
+        
+        auto goal_handle_future = this->move_gripper_client_ptr->async_send_goal(goal_msg, send_goal_options);
+    }
+
+    void after_gripper_test() {
+        RCLCPP_INFO(this->get_logger(), "After gripper test");
+    }
 };
 
 std::shared_ptr<rclcpp::Node> node;
@@ -431,7 +567,8 @@ int main(int argc, char **argv)
 
     rclcpp::init(argc, argv);
     std::shared_ptr<PickUpObjectNode> node = std::make_shared<PickUpObjectNode>();
-    node->doPickUp();
+    node->test_gripper();
+    // node->doPickUp();
     rclcpp::shutdown();
 
     return 0;

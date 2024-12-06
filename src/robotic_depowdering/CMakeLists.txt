@@ -18,6 +18,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(flexiv_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(rizon_pick_and_place REQUIRED)
@@ -59,6 +60,7 @@ ament_target_dependencies(
   moveit_visual_tools
   trajectory_msgs 
   builtin_interfaces 
+  flexiv_msgs
   tf2 
   tf2_ros 
   tf2_eigen 
@@ -68,30 +70,10 @@ ament_target_dependencies(
   ament_index_cpp
 )
 
-add_executable(move_to_pose_service src/move_to_pose_service.cpp)
-target_include_directories(move_to_pose_service PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-  
-target_compile_features(move_to_pose_service PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(
-  move_to_pose_service
-  "moveit_ros_planning_interface"
-  "rclcpp"
-  "moveit_visual_tools"
-  "geometry_msgs"
-  "robotic_depowdering_interfaces"
-)
-# target_link_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/lib)
-target_include_directories(pick_up_object PRIVATE ${PROJECT_SOURCE_DIR}/../flexiv_ros2/flexiv_hardware/rdk/flexiv_rdk/include)
-# target_link_directories(pick_up_object PRIVATE ~/Robotic_depowdering/build/flexiv_rdk/lib)
-
-
 install( TARGETS
   server
   client
   pick_up_object
-  move_to_pose_service
   DESTINATION lib/${PROJECT_NAME}
 )
 
