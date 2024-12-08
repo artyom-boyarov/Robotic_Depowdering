@@ -119,6 +119,8 @@ public:
 
         move_group_interface_->setNumPlanningAttempts(10);
         move_group_interface_->setPlanningTime(5.0);
+         // This way we don't hit the floor which is at z = -0.015. (leave some room)
+        move_group_interface_->setWorkspace(-1.0, -1.0, -0.014, 1.0, 1.0, 1.0);
 
         RCLCPP_INFO(this->get_logger(), "Initialized move_group_interface");
         planning_scene_interface_ =
@@ -235,7 +237,6 @@ public:
         initiailizeMoveIt();
         // Add collision objects.
         addTargetObjectCollisionObject();
-        addFloorCollisionObject();
 
         std::optional<std::shared_ptr<GraspConfiguration>> grasp = getGrasp();
 
@@ -279,7 +280,16 @@ public:
             return;
         }
 
-        RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to move to grasp pose.");
+        RCLCPP_INFO(this->get_logger(), "Moved to bite pose. Press 'Continue' to open gripper.");
+        waitForContinue();
+
+        RCLCPP_INFO(this->get_logger(), "Opening gripper");
+        if (!controlGripperWidth(graspConfiguration->width * 1.1))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to open gripper.");
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Opened gripper. Press 'Continue' to move to grasp pose.");
         waitForContinue();
 
         RCLCPP_INFO(this->get_logger(), "Moving to grasp pose.");
@@ -365,22 +375,6 @@ public:
 
         target_pose.orientation = tf2::toMsg(rot_q);
         return target_pose;
-    }
-
-    void doRaise(const geometry_msgs::msg::Pose &grasp_pose)
-    {
-        // if (msg->buttons[2] != 1) return;
-        RCLCPP_INFO(this->get_logger(), "Lifting part");
-
-        auto raisedPose = grasp_pose;
-        raisedPose.position.z += 0.2; // Raise by 20 cm
-
-        if (!moveToPose(raisedPose))
-        {
-            RCLCPP_ERROR(this->get_logger(), "Failed to raise part");
-            return;
-        }
-        RCLCPP_INFO(this->get_logger(), "Test finished. When ready, switch the robot to manual mode to release the part");
     }
 
     std::optional<std::shared_ptr<GraspConfiguration>> getGrasp()
@@ -567,8 +561,8 @@ int main(int argc, char **argv)
 
     rclcpp::init(argc, argv);
     std::shared_ptr<PickUpObjectNode> node = std::make_shared<PickUpObjectNode>();
-    node->test_gripper();
-    // node->doPickUp();
+    // node->test_gripper();
+    node->doPickUp();
     rclcpp::shutdown();
 
     return 0;

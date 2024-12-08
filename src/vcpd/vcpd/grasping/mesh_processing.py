@@ -75,8 +75,12 @@ def process_obj_mesh(object_name, output):
     )
     
     obj_path = os.path.join(output, object_name)
-    if not os.path.exists(obj_path):
-        os.makedirs(obj_path)
+    if os.path.exists(obj_path):
+        rclpy.node.get_logger('mesh_processing').info(
+            'Mesh already processed; not processing again'
+        )
+        return
+    os.makedirs(obj_path)
     rclpy.node.get_logger('mesh_processing').info(
         'Saving output meshes to %s' % (obj_path)
     )

@@ -19,6 +19,15 @@ import pyvista
 import time
 
 DISPLACEMENT_THRESHOLD = 0.00001
+QOF_DISP = 100
+QOF_COM = 500
+QOF_APPR = 1
+
+def grasp_quality(dist_to_com, approach: np.ndarray, displacement: float) -> float:
+    downward_z = np.array([0,0,-1])
+    approach_angle = np.arccos(np.dot(downward_z, approach))
+    return (QOF_DISP * displacement) + (QOF_COM * dist_to_com) + (QOF_APPR * approach_angle)
+
 def numpy_arr_to_vec3(vec: np.ndarray) -> Vector3:
     output_vec = Vector3()
     output_vec.x = vec[0]
@@ -77,6 +86,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     
     fea_tester.re_mesh_object(obj_name, robotic_depowdering_package_share_dir + "/test_parts/",
                               robotic_depowdering_package_share_dir + "/remeshed_test_parts/")
+    fea_tester.initialize_fea()
 
     # TODO: When we get the updated flexiv library, get this to point to the
     # meshes in robotic_depowdering
@@ -123,10 +133,12 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'quaternions': [],
                     'minimum_force': [],
                     'dist_to_com': [],
-                    'displacement': []}
+                    'displacement': [],
+                    'quality_objective_fn': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
-    prev_vertex = mesh.vertices[0]
-    for i in range(0, num_vertices, 20):
+
+    skip_factor = int(((num_vertices) / 20))
+    for i in range(0, num_vertices, skip_factor):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
         # if np.linalg.norm(vertex - prev_vertex) < 0.015: continue # Skip vertices too close
@@ -224,6 +236,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     if np.sum(np.sum(np.abs(quat), axis=1) == 0) > 0:
                         print(1)
                         pass
+                    displacement = fea_tester.find_grasp_displacement(np.array([selected_faces[j]]), np.array([i]), np.array([mesh.vertex_normals[i]]) )
+                
                     for angle_idx in range(cfg['num_angle']):
                         rot_mat = Rotation.from_quat(quat[angle_idx]).as_matrix()
                         # X = purple
@@ -246,12 +260,11 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                         p.removeUserDebugItem(ly)
                         p.removeUserDebugItem(lz)
 
-                        
-
                         if not grasp_geometry.found: continue
                         is_force_closure = grasp_eval.is_force_closure(grasp_geometry)
-                        displacement = fea_tester.find_grasp_displacement(np.array([selected_faces[j]]), np.array([i]), np.array([mesh.vertex_normals[i]]) )
-                            
+
+                        quality = grasp_quality(np.linalg.norm(centers[j] - obj_center_of_mass), rot_mat[0:3, 2], displacement)
+                        
                         if (not rg.is_collided([])) and \
                             grasp_geometry.found and is_force_closure and displacement < DISPLACEMENT_THRESHOLD:
                             if verbose: rclpy.node.get_logger(LOGGER_NAME).info("==No Collision, can place fingers, and is force closure: adding to grasp info vector==")
@@ -277,6 +290,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                             grasp_info['dist_to_com'].append(np.linalg.norm(centers[j] - obj_center_of_mass))
 
                             grasp_info['displacement'].append(displacement)
+                            grasp_info['quality_objective_fn'].append(quality)
                             # print(displacement[0])
 
                     quats[j] = quat[0]
@@ -317,8 +331,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
 
     # x = input()
     # Do threshold + COM
-    print('Safest by distance to COM')
-    safest_grasp = np.argmin(grasp_info['dist_to_com'])
+    print('Safest by given objective function')
+    safest_grasp = np.argmin(grasp_info['quality_objective_fn'])
     grasp.found_grasp = True
     grasp.axis = numpy_arr_to_vec3(grasp_info['x_directions'][safest_grasp])
     grasp.binormal = numpy_arr_to_vec3(grasp_info['y_directions'][safest_grasp])

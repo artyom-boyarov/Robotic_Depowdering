@@ -42,6 +42,49 @@ class FEAGraspTester:
         # print('\n')
         pass
 
+    def initialize_fea(self):
+
+
+        # Check node numbering is correct 
+        # print(self.domain.geometry.x[grasp_node_nums])
+        # print('\n')
+
+        self.E  = 3.5e9
+        self.nu = 0.35
+
+        self.lambda_ = self.E * self.nu / ((1.0 + self.nu) * (1 - 2.0*self.nu))
+        mu      = 0.5 * self.E / (1.0 + self.nu)
+
+        self.V = fem.functionspace(self.domain, ("Lagrange", 1, (self.domain.geometry.dim, )))
+        self.fdim = self.domain.topology.dim - 1
+        self.u_D = np.array([0, 0, 0], dtype=default_scalar_type)
+        T = fem.Constant(self.domain, default_scalar_type((0, 0, 0)))
+        ds = ufl.Measure("ds", domain=self.domain)
+
+        def epsilon(u):
+            return ufl.sym(ufl.grad(u)) # Equivalent to 0.5*(ufl.nabla_grad(u) + ufl.nabla_grad(u).T)
+
+        def sigma(u):
+            return self.lambda_ * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2 * mu * epsilon(u)
+
+
+        u = ufl.TrialFunction(self.V)
+        v = ufl.TestFunction(self.V)
+        a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx
+        L = ufl.dot(T, v) * ds
+
+        ## Solution setup
+        self.a_compiled = fem.form(a)
+        self.L_compiled = fem.form(L)
+
+        # Create solution function
+        self.uh = fem.Function(self.V)
+
+        # Solver
+        self.solver = PETSc.KSP().create(self.domain.comm)
+        self.solver.setType(PETSc.KSP.Type.PREONLY)
+        self.solver.getPC().setType(PETSc.PC.Type.LU)
+
     def re_mesh_object(self, obj_name, mesh_dir, surface_mesh_output_dir):
         # Get new resampled surface mesh and its volume mesh
         obj_file_path = os.path.join(mesh_dir, obj_name + ".obj")
@@ -121,83 +164,42 @@ class FEAGraspTester:
         grasp_node_nums  = self.free_end_nodes[grasp_node_nums]
 
 
-        # Check node numbering is correct 
-        # print(self.domain.geometry.x[grasp_node_nums])
-        # print('\n')
 
-        E  = 3.5e9
-        nu = 0.35
-
-        lambda_ = E * nu / ((1.0 + nu) * (1 - 2.0*nu))
-        mu      = 0.5 * E / (1.0 + nu)
-
-        V = fem.functionspace(self.domain, ("Lagrange", 1, (self.domain.geometry.dim, )))
-        fdim = self.domain.topology.dim - 1
-        u_D = np.array([0, 0, 0], dtype=default_scalar_type)
-        T = fem.Constant(self.domain, default_scalar_type((0, 0, 0)))
-        ds = ufl.Measure("ds", domain=self.domain)
-
-        def epsilon(u):
-            return ufl.sym(ufl.grad(u)) # Equivalent to 0.5*(ufl.nabla_grad(u) + ufl.nabla_grad(u).T)
-
-        def sigma(u):
-            return lambda_ * ufl.nabla_div(u) * ufl.Identity(len(u)) + 2 * mu * epsilon(u)
-
-
-        u = ufl.TrialFunction(V)
-        v = ufl.TestFunction(V)
-        a = ufl.inner(sigma(u), epsilon(v)) * ufl.dx
-        L = ufl.dot(T, v) * ds
-
-        ## Solution setup
-        a_compiled = fem.form(a)
-        L_compiled = fem.form(L)
-
-        # Create solution function
-        uh = fem.Function(V)
-
-        # Solver
-        solver = PETSc.KSP().create(self.domain.comm)
-        solver.setType(PETSc.KSP.Type.PREONLY)
-        solver.getPC().setType(PETSc.PC.Type.LU)
-
-        # Store maximum displacements here
-        max_displacement = np.empty(grasp_facet_nums.size)
-
+        # Actual solver \/\/
         t2 = time.time()
-        for n in np.arange(grasp_facet_nums.size):
-            boundary_facets = np.array([grasp_facet_nums[n]])
-            
-            bc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, boundary_facets), V)
-            
-            # Assemble system, applying boundary conditions
-            A = assemble_matrix(a_compiled, bcs=[bc])
-            A.assemble()
-            
-            b = assemble_vector(L_compiled)
-            apply_lifting(b, [a_compiled], bcs=[[bc]])
-            b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
-            set_bc(b, [bc])
-            
-            global_node = grasp_node_nums[n]
-            b.setValue(3*global_node,   -grasp_node_normals[n,0])
-            b.setValue(3*global_node+1, -grasp_node_normals[n,1])
-            b.setValue(3*global_node+2, -grasp_node_normals[n,2])
-            
-            # Solver
-            solver.setOperators(A)
-            
-            # Compute solution
-            solver.solve(b, uh.x.petsc_vec)
-            
-            #Store max displacement from solution
-            max_displacement[n] = np.max(np.linalg.norm(np.reshape(uh.x.array, (-1,3)), axis=1))
+        print("GRASP FACET NUMS SIZE:", grasp_facet_nums.size)
+        boundary_facets = np.array([grasp_facet_nums[0]])
         
-            # Disable printing of deformation to files.
-            # with io.XDMFFile(self.domain.comm, "deformation" + str(n) + ".xdmf", "w") as xdmf:
-            #     xdmf.write_mesh(self.domain)
-            #     uh.name = "Deformation"
-            #     xdmf.write_function(uh)
+        bc = fem.dirichletbc(self.u_D, fem.locate_dofs_topological(self.V, self.fdim, boundary_facets), self.V)
+        
+        # Assemble system, applying boundary conditions
+        A = assemble_matrix(self.a_compiled, bcs=[bc])
+        A.assemble()
+        
+        b = assemble_vector(self.L_compiled)
+        apply_lifting(b, [self.a_compiled], bcs=[[bc]])
+        b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
+        set_bc(b, [bc])
+        
+        global_node = grasp_node_nums[0]
+        b.setValue(3*global_node,   -grasp_node_normals[0,0])
+        b.setValue(3*global_node+1, -grasp_node_normals[0,1])
+        b.setValue(3*global_node+2, -grasp_node_normals[0,2])
+        
+        # Solver
+        self.solver.setOperators(A)
+        
+        # Compute solution
+        self.solver.solve(b, self.uh.x.petsc_vec)
+        
+        #Store max displacement from solution
+        max_displacement = np.max(np.linalg.norm(np.reshape(self.uh.x.array, (-1,3)), axis=1))
+    
+        # Disable printing of deformation to files.
+        # with io.XDMFFile(self.domain.comm, "deformation" + str(n) + ".xdmf", "w") as xdmf:
+        #     xdmf.write_mesh(self.domain)
+        #     uh.name = "Deformation"
+        #     xdmf.write_function(uh)
 
         t3 = time.time()
 
