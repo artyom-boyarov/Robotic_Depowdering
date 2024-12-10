@@ -3,29 +3,16 @@
 ## Packages
 - ```flexiv_ros2```: contains the Flexiv ROS2 package and RDK, used for interfacing with, controlling and simulating the Flexiv Rizon 4s.
 - ```vcpd```: VCPD grasp generation library, extended with FEA-based grasp analysis.
-- ```rizon_pick_and_place```: interface to MoveIt! for motion planning and IK.
 - ```robotic_depowdering```: nodes and services used in the depowdering process.
 - ```robotic_depowdering_interfaces```: message and service definitions used by ```robotic_depowdering```.
 ## System requirements
-This project requires the following software versions:
-<table>
-  <tr>
-    <td>Ubuntu</td>
-    <td>ROS2</td>
-    <td>Gazebo</td>
-  </tr>
-  <tr>
-    <td>22.04</td>
-    <td>Humble</td>
-    <td>Fortress</td>
-  </tr>
-</table>
+This project requires <b> Ubuntu 22.04 </b> and <b>ROS2 Humble</b>.
 
 The following options for which platform you run the software on are supported. Depending on the platform you decide to use to develop for this robot, you'll be able to do the following:
 <table>
   <tr>
     <td>Platform</td>
-    <td>Simulation of robot in RViz + Gazebo</td>
+    <td>Simulation of robot in RViz</td>
     <td>Control of physical robot from your host machine</td>
   </tr>
   <tr>
@@ -82,7 +69,6 @@ source ~/.bashrc
 ### General instructions
 Follow the installation instructions to install ROS2 Humble and Gazebo Fortress:
 - ROS2: <a>https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html</a>
-- Gazebo: <a>https://gazebosim.org/docs/fortress/install_ubuntu</a>
 Once everything is installed, move onto installing and building this repo.
 1. Source ROS underlay: <br>
 ```
@@ -158,61 +144,45 @@ In any terminal where you run code, do: <br>
 source /opt/ros/humble/setup.sh
 source install/setup.sh
 ```
-
-### VCPD grasping
-#### Pre-process objects
-> [!IMPORTANT]
-> Ensure the parts are at their location in the loop in their CAD file, i.e. if a part is at (1,1,1) then center the part at (1,1,1) in the OBJ.
-
-Run:
-```
-ros2 run vcpd mesh_processing --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd/ -p width:=0.1 -p output_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf
-ros2 run vcpd grasp_analysis --ros-args -p mesh_path:=/home/artyom/Robotic_Depowdering/src/robotic_depowdering/test_parts_vcpd_urdf -p config:=/home/artyom/Robotic_Depowdering/src/vcpd/config/config.json -p output_path:=/home/artyom/Robotic_Depowdering/src/vcpd/test_parts_grasps_out -p gui:=false -p verbose:=false
-```
-Which parts can you not grasp:
-- twisted vase (too big)
-- TestDonutMedium (too big)
-- Side gear (unsure)
-To visualize the grasp generation set gui to true.
-
-### Pick up object + visualization
-#### With real robot
+### With real robot
 > [!IMPORTANT]
 > Follow the procedure to connect and set up the robot described in <a href="https://docs.google.com/document/d/1rZFnRo6KGYT_emA9AcjmK8JNeBhtwec6_ygwI96AM5s/edit?usp=sharing">the SOP document</a>. Then, move onto these instructions.
 
 > [!CAUTION]
 > Don't damage the Rizon. Test your code thoroughly in simulation to ensure it works.
 > When running code on the Rizon, always keep your finger on the emergency stop button and don't get distracted. The Rizon is an expensive piece of equipment - don't break it.
-
-Connect robot and power it on. Test connection:
+#### Installing Flexiv Elements software
+To interface, monitor, and power on with the robot, you need the Flexiv Elements Control Software installed. This is installed on the robot's tablet, but the tablet needs to be connected via ethernet to the control box. If you only have one ethernet cable, install the Flexiv Elements software by downloading <a href="https://drive.google.com/file/d/1p_nEbUaCuuYqt9wKqh0vkWezBxq1xwwb/view?usp=drive_link">this file</a> and extracting, then extracting the Flexiv Elements software zip. Then run:
 ```
-ping 192.168.2.100
+bash setup_FlexivElements.sh
 ```
-Find your IP address: (look for ```inet``` under ```eth0```):
+To run Elements:
 ```
-ifconfig
+bash run_FlexivElements.sh
 ```
+#### Running code
+Connect robot and power it on. Find the serial number in the Flexiv Elements Software.
 In one terminal run:<br>
 ```
-ros2 launch rizon_pick_and_place rizon_pick_and_place.launch.py robot_ip:=192.167.2.100 local_ip:=[your IP]
+ros2 launch flexiv_bringup rizon_moveit.launch.py robot_sn:=[SN] load_gripper:=true
 ```
 In another terminal run:<br>
 ```
-ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=-0.015
+ros2 launch robotic_depowdering pick_up_object.launch.py object:=Buckle object_z_pos:=0.4 object_x_pos:=-0.25 object_y_pos:=-0.25
 ```
-Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located. This will make the robot move and pick up the part.<br>
+Replace 'Buckle' with the name of the part you want to use, and the positions with the position of where the part is located. This will make the robot move and pick up the part. Follow the prompts to click 'continue' to go through the process.<br>
 
 > [!NOTE]
 > The robot's base plate is 15 mm thick, so if you place the object flat on the table it will be at z = -0.015.
 
-#### Without robot (just simulation)
+### Without robot (just simulation)
 In one terminal run:<br>
 ```
-ros2 launch rizon_pick_and_place rizon_pick_and_place.launch.py robot_ip:=dont-care local_ip:=dont-care use_fake_hardware:=true
+ros2 launch flexiv_bringup rizon_moveit.launch.py robot_sn:=dont-care use_fake_hardware:=true load_gripper:=true
 ```
 In another terminal run:<br>
 ```
-ros2 launch robotic_depowdering robotic_depowdering.launch.py test_object:=Buckle.obj test_object_x_pos:=0.5 test_object_y_pos:=0.5 test_object_z_pos:=1.0
+ros2 launch robotic_depowdering pick_up_object.launch.py object:=Buckle object_z_pos:=0.4 object_x_pos:=-0.25 object_y_pos:=-0.25
 ```
 Replace Buckle.obj with the name of the part you want to use, and the positions with the position of where the part is located.
 ## Test parts
