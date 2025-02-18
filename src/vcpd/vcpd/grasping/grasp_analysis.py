@@ -25,6 +25,7 @@ ros2 run vcpd grasp_analysis \
     -p config:=$HOME/Robotic_Depowdering/src/vcpd/cfg/config.json \
     -p output_path:=$HOME/Robotic_Depowdering/extra_parts/out \
     -p gui:=true -p verbose:=true \
+    -p num_samples:=30 \
     -p mesh_name:=RoundedU
 """
 
@@ -54,7 +55,7 @@ def numpy_arr_to_point(vec: np.ndarray) -> Point:
     return output_point
     
 
-def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDGrasp.Response:
+def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samples: int) -> VCPDGrasp.Response:
     t_start = time.time()
     
     mode = p.GUI if gui else p.DIRECT
@@ -146,7 +147,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'quality_objective_fn': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
 
-    skip_factor = 1 
+    skip_factor = 1 if num_samples == 0 else int(num_vertices / num_samples)
     for i in range(0, num_vertices, skip_factor):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
@@ -373,12 +374,13 @@ def main():
     rclpy.init()
     this_node = rclpy.node.Node('grasp_analysis')
 
-    mesh_path_param_name = 'mesh_path'
-    mesh_name_param_name = 'mesh_name'
-    config_file_param_name = 'config'
-    output_path_param_name = 'output_path'
-    gui_param_name = 'gui'
-    verbose_param_name = 'verbose'
+    mesh_path_param_name    = 'mesh_path'
+    mesh_name_param_name    = 'mesh_name'
+    config_file_param_name  = 'config'
+    output_path_param_name  = 'output_path'
+    num_samples_param_name  = 'num_samples'
+    gui_param_name          = 'gui'
+    verbose_param_name      = 'verbose'
 
     vcpd_package_share_directory = get_package_share_directory('vcpd')
 
@@ -386,6 +388,7 @@ def main():
     this_node.declare_parameter(mesh_name_param_name, 'RoundedU.obj')
     this_node.declare_parameter(config_file_param_name, vcpd_package_share_directory + '/cfg/config.json')
     this_node.declare_parameter(output_path_param_name, ROBOTIC_DEPOWDERING_TMP_DIR + 'meshes_grasp_output')
+    this_node.declare_parameter(num_samples_param_name, 0)
     this_node.declare_parameter(gui_param_name, False)
     this_node.declare_parameter(verbose_param_name, False)
 
@@ -393,6 +396,7 @@ def main():
     mesh_name = this_node.get_parameter(mesh_name_param_name).get_parameter_value().string_value
     config_file = this_node.get_parameter(config_file_param_name).get_parameter_value().string_value
     output_path = this_node.get_parameter(output_path_param_name).get_parameter_value().string_value
+    num_samples = this_node.get_parameter(num_samples_param_name).get_parameter_value().integer_value
     gui = this_node.get_parameter(gui_param_name).get_parameter_value().bool_value
     verbose = this_node.get_parameter(verbose_param_name).get_parameter_value().bool_value
 
@@ -400,6 +404,7 @@ def main():
     print("Mesh name:", mesh_name)
     print("Config file:", config_file)
     print("Output path:", output_path)
+    print("Num samples:", num_samples)
     print("Gui:", gui)
     print("Verbose:", verbose)
     
@@ -411,7 +416,7 @@ def main():
     
     process_obj_mesh(mesh_path, output_path)
     
-    find_grasp(gui, verbose, mesh_name, mesh_path)
+    find_grasp(gui, verbose, mesh_name, mesh_path, num_samples)
     
     
 
