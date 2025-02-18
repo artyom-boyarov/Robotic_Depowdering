@@ -15,8 +15,18 @@ from . import grasp_evaluation as grasp_eval
 from . import fenics_grasp_calc as fea
 from ament_index_python.packages import get_package_share_directory
 from .constants import ROBOTIC_DEPOWDERING_TMP_DIR, COLLISION_ANGLE_EPSILON
+from .mesh_processing import process_obj_mesh
 import pyvista
 import time
+
+"""
+ros2 run vcpd grasp_analysis \
+    --ros-args -p mesh_path:=$HOME/Robotic_Depowdering/extra_parts \
+    -p config:=$HOME/Robotic_Depowdering/src/vcpd/cfg/config.json \
+    -p output_path:=$HOME/Robotic_Depowdering/extra_parts/out \
+    -p gui:=true -p verbose:=true \
+    -p mesh_name:=RoundedU
+"""
 
 DISPLACEMENT_THRESHOLD = 0.00001
 QOF_DISP = 100
@@ -56,7 +66,6 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     fea_tester = fea.FEAGraspTester()
     
     vcpd_package_share_dir = get_package_share_directory('vcpd')
-    robotic_depowdering_package_share_dir = get_package_share_directory('robotic_depowdering')
 
     LOGGER_NAME = 'grasp_analysis'
 
@@ -75,7 +84,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
             meshScale=[100]*3
         ),
         baseMass = 0,
-        basePosition = [0,0,0],
+        basePosition = [0,0,-0.005],
         baseOrientation = [0,0,0,1]
     )
     p.changeVisualShape(floor_id, -1, rgbaColor=[0.9, 0.9, 0.9, 1])
@@ -84,8 +93,8 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     y_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0.2,0], lineColorRGB=[1, 1,0], lifeTime=0, lineWidth=4.0)
     z_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0,0.2], lineColorRGB=[0, 1,0], lifeTime=0, lineWidth=4.0)
     
-    fea_tester.re_mesh_object(obj_name, robotic_depowdering_package_share_dir + "/test_parts/",
-                              robotic_depowdering_package_share_dir + "/remeshed_test_parts/")
+    fea_tester.re_mesh_object(obj_name, mesh_path,
+                              mesh_path + "/fea_meshes/")
     fea_tester.initialize_fea()
 
     # TODO: When we get the updated flexiv library, get this to point to the
@@ -95,7 +104,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
     rclpy.node.get_logger(LOGGER_NAME).info("Calculating grasps for: %s " % (obj_name))
 
 
-    obj_path = os.path.join(robotic_depowdering_package_share_dir, "remeshed_test_parts", obj_name+'.fenics_surf_mesh.obj')
+    obj_path = os.path.join(mesh_path + "/fea_meshes/", obj_name+'.fenics_surf_mesh.obj')
 
     mesh = pyvista.read(obj_path)
     mesh.compute_normals(inplace=True, auto_orient_normals=True)
@@ -137,7 +146,7 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str) -> VCPDG
                     'quality_objective_fn': []}
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
 
-    skip_factor = int(((num_vertices) / 20))
+    skip_factor = 1 
     for i in range(0, num_vertices, skip_factor):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
@@ -365,6 +374,7 @@ def main():
     this_node = rclpy.node.Node('grasp_analysis')
 
     mesh_path_param_name = 'mesh_path'
+    mesh_name_param_name = 'mesh_name'
     config_file_param_name = 'config'
     output_path_param_name = 'output_path'
     gui_param_name = 'gui'
@@ -373,22 +383,35 @@ def main():
     vcpd_package_share_directory = get_package_share_directory('vcpd')
 
     this_node.declare_parameter(mesh_path_param_name, ROBOTIC_DEPOWDERING_TMP_DIR + 'meshes_output')
+    this_node.declare_parameter(mesh_name_param_name, 'RoundedU.obj')
     this_node.declare_parameter(config_file_param_name, vcpd_package_share_directory + '/cfg/config.json')
     this_node.declare_parameter(output_path_param_name, ROBOTIC_DEPOWDERING_TMP_DIR + 'meshes_grasp_output')
     this_node.declare_parameter(gui_param_name, False)
     this_node.declare_parameter(verbose_param_name, False)
 
     mesh_path = this_node.get_parameter(mesh_path_param_name).get_parameter_value().string_value
+    mesh_name = this_node.get_parameter(mesh_name_param_name).get_parameter_value().string_value
     config_file = this_node.get_parameter(config_file_param_name).get_parameter_value().string_value
     output_path = this_node.get_parameter(output_path_param_name).get_parameter_value().string_value
     gui = this_node.get_parameter(gui_param_name).get_parameter_value().bool_value
     verbose = this_node.get_parameter(verbose_param_name).get_parameter_value().bool_value
 
+    print("Mesh path:", mesh_path)
+    print("Mesh name:", mesh_name)
+    print("Config file:", config_file)
+    print("Output path:", output_path)
+    print("Gui:", gui)
+    print("Verbose:", verbose)
+    
+    
     if not os.path.exists(mesh_path):
         os.makedirs(mesh_path)
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
+    process_obj_mesh(mesh_path, output_path)
+    
+    find_grasp(gui, verbose, mesh_name, mesh_path)
     
     
 

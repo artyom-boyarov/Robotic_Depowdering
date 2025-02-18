@@ -90,6 +90,7 @@ class FEAGraspTester:
         obj_file_path = os.path.join(mesh_dir, obj_name + ".obj")
         self.stl_mesh = meshio.read(obj_file_path)
         t0 = time.time()
+        
         pygalmesh_vol_mesh = pygalmesh.generate_volume_mesh_from_surface_mesh(
             obj_file_path,
             min_facet_angle=25.0,

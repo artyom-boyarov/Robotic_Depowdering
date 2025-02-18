@@ -7,3 +7,6 @@
 [submodule "src/rviz_visual_tools"]
 	path = src/rviz_visual_tools
 	url = https://github.com/PickNikRobotics/rviz_visual_tools
+[submodule "src/flexiv_ros2"]
+	path = src/flexiv_ros2
+	url = https://github.com/flexivrobotics/flexiv_ros2/

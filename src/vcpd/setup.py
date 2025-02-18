@@ -7,8 +7,6 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/cfg/', ['cfg/config.json']),
         ('share/' + package_name + '/assets/grav/collision', glob('assets/grav/collision/*.obj')),
