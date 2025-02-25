@@ -159,7 +159,7 @@ class FEAGraspTester:
 #                                [-1.0, 0.0, 0.0],
 #                                [ 0.0, 1.0, 0.0]])
 
-
+        t0 = time.time()
         # Change facet and node numbering back to Fenics numbering
         grasp_facet_nums = self.free_end_facets[grasp_facet_nums]
         grasp_node_nums  = self.free_end_nodes[grasp_node_nums]
@@ -168,7 +168,7 @@ class FEAGraspTester:
 
         # Actual solver \/\/
         t2 = time.time()
-        print("GRASP FACET NUMS SIZE:", grasp_facet_nums.size)
+        # print("GRASP FACET NUMS SIZE:", grasp_facet_nums.size)
         boundary_facets = np.array([grasp_facet_nums[0]])
         
         bc = fem.dirichletbc(self.u_D, fem.locate_dofs_topological(self.V, self.fdim, boundary_facets), self.V)
@@ -207,10 +207,8 @@ class FEAGraspTester:
         # print(max_displacement)
         # print('\n')
 
-        # print("Remeshing time:", t1-t0, "seconds\n")
-        # print("Total FEA time:", t3-t2, "seconds")
 
-        return max_displacement
+        return max_displacement, t3 - t0
 
 
 

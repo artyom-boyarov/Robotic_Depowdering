@@ -94,10 +94,13 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samp
     y_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0.2,0], lineColorRGB=[1, 1,0], lifeTime=0, lineWidth=4.0)
     z_axis = p.addUserDebugLine(lineFromXYZ=[0,0,0], lineToXYZ=[0,0,0.2], lineColorRGB=[0, 1,0], lifeTime=0, lineWidth=4.0)
     
+    fea_start = time.time()
     fea_tester.re_mesh_object(obj_name, mesh_path,
                               mesh_path + "/fea_meshes/")
     fea_tester.initialize_fea()
-
+    fea_end = time.time()
+    print("TIME TO RE-MESH AND INITIALIZE FEA:", fea_end - fea_start)
+    
     # TODO: When we get the updated flexiv library, get this to point to the
     # meshes in robotic_depowdering
     rg = Rizon4sGripper(os.path.join(vcpd_package_share_dir, 'assets'))
@@ -148,6 +151,11 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samp
     rclpy.node.get_logger(LOGGER_NAME).info('%s has %d vertices in the mesh' % (obj_name, num_vertices))
 
     skip_factor = 1 if num_samples == 0 else int(num_vertices / num_samples)
+    tot_grasp_sample_time = 0
+    tot_grasp_fea_time = 0
+    num_grasps_sampled = 0
+    
+    time_sample_start = time.time()
     for i in range(0, num_vertices, skip_factor):
         vertex, normal = mesh.vertices[i], mesh.vertex_normals[i]
         # print("Norm: ",np.linalg.norm(vertex - prev_vertex))
@@ -212,23 +220,19 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samp
             # selected_intersects = selected_intersects[width_flag]
             # widths = widths[width_flag]
             centers = (vertex.reshape(1, 3) + selected_intersects) / 2
-            face_normals = mesh.face_normals[selected_faces]
             face_vertex_normals = mesh.vertex_normals[mesh.faces[selected_faces]]
             cos1s = np.abs(np.sum(face_vertex_normals * normal.reshape(1, 1, 3), axis=-1))
             vertex_face_ids = mesh.vertex_faces[i][mesh.vertex_faces[i] != -1]
             vertex_face_normals = mesh.face_normals[vertex_face_ids]
             cos2s = np.abs(np.dot(vertex_face_normals, normal))
-            mean_cos1, min_cos1 = np.mean(cos1s, axis=1), np.min(cos1s, axis=1)
-            mean_cos2, min_cos2 = np.mean(cos2s), np.min(cos2s)
-            mean_score, min_score = mean_cos1 * mean_cos2, min_cos1 * min_cos2
-            raw = np.abs(np.dot(face_normals, normal))
+            min_cos1 = np.min(cos1s, axis=1)
+            min_cos2 = np.min(cos2s)
+            min_score = min_cos1 * min_cos2
             # print('original antipodal score: {}'.format(raw))
             # print('mean cos1: {} | mean cos2: {} | mean antipodal score: {}'.format(mean_cos1, mean_cos2, mean_score))
             # print('min cos1: {} | min cos2: {} | min antipodal score: {}'.format(min_cos1, min_cos2, min_score))
             # vertex index, direction, intersect face index, intersect vertex, center, antipodal raw, mean, min
-            curr_idx = np.array([i] * num_intersects)
             directions = np.stack([normal] * num_intersects, axis=0)
-            cols = np.ones((num_intersects, cfg['num_angle']))
             quats = np.zeros((num_intersects, 4))
             quats[..., -1] = 1
             feasibles = np.zeros((num_intersects, cfg['num_angle']))
@@ -244,11 +248,11 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samp
                     rots = np.matmul(base.reshape((1, 3, 3)), delta_rots)
                     quat = Rotation.from_matrix(rots).as_quat()
                     if np.sum(np.sum(np.abs(quat), axis=1) == 0) > 0:
-                        print(1)
                         pass
-                    displacement = fea_tester.find_grasp_displacement(np.array([selected_faces[j]]), np.array([i]), np.array([mesh.vertex_normals[i]]) )
-                
+                    displacement, fea_time = fea_tester.find_grasp_displacement(np.array([selected_faces[j]]), np.array([i]), np.array([mesh.vertex_normals[i]]) )
+                    tot_grasp_fea_time += fea_time
                     for angle_idx in range(cfg['num_angle']):
+                        num_grasps_sampled += 1
                         rot_mat = Rotation.from_quat(quat[angle_idx]).as_matrix()
                         # X = purple
                         # Y = cyan
@@ -305,6 +309,15 @@ def find_grasp(gui: bool, verbose: bool, obj_name: str, mesh_path: str, num_samp
 
                     quats[j] = quat[0]
 
+    time_sample_end = time.time()
+    tot_grasp_sample_time = (time_sample_end - time_sample_start) - tot_grasp_fea_time
+    
+    avg_grasp_sample_time = (tot_grasp_sample_time / num_grasps_sampled)
+    avg_grasp_fea_time = (tot_grasp_fea_time / num_grasps_sampled)
+    
+    print("AVERAGE SAMPLE TIME: ", avg_grasp_sample_time)
+    print("AVERAGE FEA TIME:    ", avg_grasp_fea_time)
+    
     num_pairs = len(grasp_info['vertex_ids'])
     rclpy.node.get_logger(LOGGER_NAME).info('Found %d grasp poses for %s' % (num_pairs, obj_name))
 
